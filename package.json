@@ -1,0 +1,24 @@
+{
+  "name": "beads-bonita",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "dev:storefront": "pnpm --filter @beads-bonita/storefront dev",
+    "dev:admin": "pnpm --filter @beads-bonita/admin dev",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
+    "db:typegen": "supabase gen types typescript --local > packages/supabase/src/database.generated.ts"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.0",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "supabase": "^2.53.0",
+    "turbo": "^2.8.12"
+  },
+  "packageManager": "pnpm@10.19.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

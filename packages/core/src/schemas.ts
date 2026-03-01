@@ -67,3 +67,37 @@ export const checkoutIntentSchema = z.object({
   paymentMethod: z.enum(["sslcommerz", "cash_on_delivery"]),
   note: z.string().max(300).optional(),
 });
+
+export const checkoutCartItemSchema = z.object({
+  productId: z.string().uuid(),
+  slug: z.string().min(2).max(140),
+  name: z.string().min(2).max(120),
+  categoryName: z.string().min(2).max(80),
+  subcategoryName: z.string().max(80).nullable().optional(),
+  shortDescription: z.string().min(10).max(240),
+  price: z.number().nonnegative(),
+  compareAtPrice: z.number().nonnegative().nullable().optional(),
+  productType: productTypeSchema,
+  leadTimeDays: z.number().int().min(0).nullable().optional(),
+  quantity: z.number().int().min(1),
+});
+
+export const checkoutAddressSchema = z.object({
+  fullName: z.string().min(2).max(120),
+  email: z.email(),
+  phone: z.string().min(8).max(20),
+  district: z.string().min(2).max(80),
+  area: z.string().min(2).max(120),
+  addressLine1: z.string().min(5).max(180),
+  addressLine2: z.string().max(180).optional(),
+  postalCode: z.string().min(3).max(20).optional(),
+  note: z.string().max(300).optional(),
+});
+
+export const checkoutIntentRequestSchema = z.object({
+  customer: checkoutAddressSchema,
+  paymentMethod: z.enum(["sslcommerz", "cash_on_delivery"]),
+  items: z.array(checkoutCartItemSchema).min(1),
+});
+
+export const checkoutFinalizeRequestSchema = checkoutIntentRequestSchema;

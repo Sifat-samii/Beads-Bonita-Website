@@ -2,6 +2,7 @@ import "@beads-bonita/ui/styles.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { CartProvider } from "./_components/cart-provider";
 
 const display = Cormorant_Garamond({
   subsets: ["latin"],
@@ -26,7 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${body.variable}`}>{children}</body>
+      <body className={`${display.variable} ${body.variable}`}>
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }

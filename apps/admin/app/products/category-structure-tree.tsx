@@ -10,6 +10,7 @@ type CategoryNode = {
   sortOrder: number;
   isActive: boolean;
   productCount: number;
+  subcategoryCount: number;
   subcategories: {
     id: string;
     name: string;
@@ -79,7 +80,7 @@ export function CategoryStructureTree({
                 <div className="min-w-0">
                   <p className="truncate font-medium leading-5">{category.name}</p>
                   <p className="truncate text-xs text-white/55">
-                    {`Order ${category.sortOrder}${category.isActive ? "" : " | Archived"} | ${category.productCount} products`}
+                    {`Order ${category.sortOrder}${category.isActive ? "" : " | Archived"} | ${category.subcategoryCount} subcategories`}
                   </p>
                 </div>
               </button>

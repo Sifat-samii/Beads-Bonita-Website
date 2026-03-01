@@ -6,6 +6,7 @@ import { Surface } from "@beads-bonita/ui/surface";
 import { CategoryCreateForm } from "./category-create-form";
 import { CategoryStructureTree } from "./category-structure-tree";
 import { ErrorMessage } from "./error-message";
+import { PRODUCTS_FLASH_COOKIES } from "./flash-state";
 import { ProductForm } from "./product-form";
 import { SubcategoryCreateForm } from "./subcategory-create-form";
 import {
@@ -19,14 +20,6 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
-
-const CATEGORY_ERROR_COOKIE = "bb_products_category_error";
-const SUBCATEGORY_ERROR_COOKIE = "bb_products_subcategory_error";
-const PRODUCT_ERROR_COOKIE = "bb_products_product_error";
-const STRUCTURE_ERROR_COOKIE = "bb_products_structure_error";
-const CATEGORY_SUCCESS_COOKIE = "bb_products_category_success";
-const SUBCATEGORY_SUCCESS_COOKIE = "bb_products_subcategory_success";
-const PRODUCT_SUCCESS_COOKIE = "bb_products_product_success";
 
 type ProductsPageProps = {
   searchParams?: Promise<{
@@ -46,20 +39,26 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
   const categoryError =
-    cookieStore.get(CATEGORY_ERROR_COOKIE)?.value ?? resolvedSearchParams?.categoryError;
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.categoryError)?.value ??
+    resolvedSearchParams?.categoryError;
   const subcategoryError =
-    cookieStore.get(SUBCATEGORY_ERROR_COOKIE)?.value ?? resolvedSearchParams?.subcategoryError;
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.subcategoryError)?.value ??
+    resolvedSearchParams?.subcategoryError;
   const productError =
-    cookieStore.get(PRODUCT_ERROR_COOKIE)?.value ?? resolvedSearchParams?.productError;
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.productError)?.value ??
+    resolvedSearchParams?.productError;
   const structureError =
-    cookieStore.get(STRUCTURE_ERROR_COOKIE)?.value ?? resolvedSearchParams?.structureError;
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.structureError)?.value ??
+    resolvedSearchParams?.structureError;
   const categorySuccess =
-    cookieStore.get(CATEGORY_SUCCESS_COOKIE)?.value ?? resolvedSearchParams?.categorySuccess;
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.categorySuccess)?.value ??
+    resolvedSearchParams?.categorySuccess;
   const subcategorySuccess =
-    cookieStore.get(SUBCATEGORY_SUCCESS_COOKIE)?.value ??
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.subcategorySuccess)?.value ??
     resolvedSearchParams?.subcategorySuccess;
   const productSuccess =
-    cookieStore.get(PRODUCT_SUCCESS_COOKIE)?.value ?? resolvedSearchParams?.productSuccess;
+    cookieStore.get(PRODUCTS_FLASH_COOKIES.productSuccess)?.value ??
+    resolvedSearchParams?.productSuccess;
 
   const [{ data: categories }, { data: subcategories }, { data: products }, { data: allProductRows }] =
     await Promise.all([
@@ -200,6 +199,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     sortOrder: category.sort_order,
                     isActive: category.is_active,
                     productCount: categoryProductCounts.get(category.id) ?? 0,
+                    subcategoryCount: (subcategoriesByCategory.get(category.id) ?? []).length,
                     subcategories: [...(subcategoriesByCategory.get(category.id) ?? [])]
                       .sort((left, right) => left.sort_order - right.sort_order)
                       .map((subcategory) => ({

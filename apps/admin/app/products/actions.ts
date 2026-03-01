@@ -5,14 +5,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { categorySchema, productSchema, subcategorySchema } from "@beads-bonita/core";
 import { getSupabaseAdminClient } from "@beads-bonita/supabase/server";
-
-const CATEGORY_ERROR_COOKIE = "bb_products_category_error";
-const SUBCATEGORY_ERROR_COOKIE = "bb_products_subcategory_error";
-const PRODUCT_ERROR_COOKIE = "bb_products_product_error";
-const STRUCTURE_ERROR_COOKIE = "bb_products_structure_error";
-const CATEGORY_SUCCESS_COOKIE = "bb_products_category_success";
-const SUBCATEGORY_SUCCESS_COOKIE = "bb_products_subcategory_success";
-const PRODUCT_SUCCESS_COOKIE = "bb_products_product_success";
+import {
+  type ProductFlashErrorKind,
+  type ProductFlashSuccessKind,
+  PRODUCTS_FLASH_COOKIE_PATH,
+  getProductFlashErrorCookieName,
+  getProductFlashSuccessCookieName,
+} from "./flash-state";
 
 function asNumber(value: FormDataEntryValue | null, fallback = 0) {
   if (value === null || value === "") {
@@ -36,63 +35,36 @@ function asRequiredNumber(value: FormDataEntryValue | null) {
   return Number(value);
 }
 
-async function setErrorCookie(
-  kind: "category" | "subcategory" | "product" | "structure",
-  message: string,
-) {
+async function setErrorCookie(kind: ProductFlashErrorKind, message: string) {
   const cookieStore = await cookies();
-  const name =
-    kind === "category"
-      ? CATEGORY_ERROR_COOKIE
-      : kind === "subcategory"
-        ? SUBCATEGORY_ERROR_COOKIE
-        : kind === "product"
-          ? PRODUCT_ERROR_COOKIE
-          : STRUCTURE_ERROR_COOKIE;
+  const name = getProductFlashErrorCookieName(kind);
 
   cookieStore.set(name, message, {
     httpOnly: true,
-    path: "/products",
+    path: PRODUCTS_FLASH_COOKIE_PATH,
     sameSite: "lax",
   });
 }
 
-async function clearErrorCookie(
-  kind: "category" | "subcategory" | "product" | "structure",
-) {
+async function clearErrorCookie(kind: ProductFlashErrorKind) {
   const cookieStore = await cookies();
-  const name =
-    kind === "category"
-      ? CATEGORY_ERROR_COOKIE
-      : kind === "subcategory"
-        ? SUBCATEGORY_ERROR_COOKIE
-        : kind === "product"
-          ? PRODUCT_ERROR_COOKIE
-          : STRUCTURE_ERROR_COOKIE;
+  const name = getProductFlashErrorCookieName(kind);
 
   cookieStore.delete(name);
 }
 
-async function setSuccessCookie(kind: "category" | "subcategory" | "product") {
+async function setSuccessCookie(kind: ProductFlashSuccessKind) {
   const cookieStore = await cookies();
-  const name =
-    kind === "category"
-      ? CATEGORY_SUCCESS_COOKIE
-      : kind === "subcategory"
-        ? SUBCATEGORY_SUCCESS_COOKIE
-        : PRODUCT_SUCCESS_COOKIE;
+  const name = getProductFlashSuccessCookieName(kind);
 
   cookieStore.set(name, Date.now().toString(), {
     httpOnly: true,
-    path: "/products",
+    path: PRODUCTS_FLASH_COOKIE_PATH,
     sameSite: "lax",
   });
 }
 
-async function redirectWithError(
-  kind: "category" | "subcategory" | "product" | "structure",
-  message: string,
-): Promise<never> {
+async function redirectWithError(kind: ProductFlashErrorKind, message: string): Promise<never> {
   await setErrorCookie(kind, message);
   redirect("/products");
 }

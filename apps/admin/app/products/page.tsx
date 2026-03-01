@@ -1,20 +1,67 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { requireAdmin } from "@beads-bonita/supabase/auth";
 import { getSupabaseAdminClient } from "@beads-bonita/supabase/server";
 import { Surface } from "@beads-bonita/ui/surface";
+import { CategoryCreateForm } from "./category-create-form";
+import { CategoryStructureTree } from "./category-structure-tree";
+import { ErrorMessage } from "./error-message";
+import { ProductForm } from "./product-form";
+import { SubcategoryCreateForm } from "./subcategory-create-form";
 import {
   createCategoryAction,
   createProductAction,
   createSubcategoryAction,
+  deleteCategoryAction,
+  deleteSubcategoryAction,
+  toggleCategoryStatusAction,
+  toggleSubcategoryStatusAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+const CATEGORY_ERROR_COOKIE = "bb_products_category_error";
+const SUBCATEGORY_ERROR_COOKIE = "bb_products_subcategory_error";
+const PRODUCT_ERROR_COOKIE = "bb_products_product_error";
+const STRUCTURE_ERROR_COOKIE = "bb_products_structure_error";
+const CATEGORY_SUCCESS_COOKIE = "bb_products_category_success";
+const SUBCATEGORY_SUCCESS_COOKIE = "bb_products_subcategory_success";
+const PRODUCT_SUCCESS_COOKIE = "bb_products_product_success";
+
+type ProductsPageProps = {
+  searchParams?: Promise<{
+    categoryError?: string;
+    subcategoryError?: string;
+    productError?: string;
+    structureError?: string;
+    categorySuccess?: string;
+    subcategorySuccess?: string;
+    productSuccess?: string;
+  }>;
+};
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const { profile } = await requireAdmin();
   const supabase = getSupabaseAdminClient();
+  const resolvedSearchParams = await searchParams;
+  const cookieStore = await cookies();
+  const categoryError =
+    cookieStore.get(CATEGORY_ERROR_COOKIE)?.value ?? resolvedSearchParams?.categoryError;
+  const subcategoryError =
+    cookieStore.get(SUBCATEGORY_ERROR_COOKIE)?.value ?? resolvedSearchParams?.subcategoryError;
+  const productError =
+    cookieStore.get(PRODUCT_ERROR_COOKIE)?.value ?? resolvedSearchParams?.productError;
+  const structureError =
+    cookieStore.get(STRUCTURE_ERROR_COOKIE)?.value ?? resolvedSearchParams?.structureError;
+  const categorySuccess =
+    cookieStore.get(CATEGORY_SUCCESS_COOKIE)?.value ?? resolvedSearchParams?.categorySuccess;
+  const subcategorySuccess =
+    cookieStore.get(SUBCATEGORY_SUCCESS_COOKIE)?.value ??
+    resolvedSearchParams?.subcategorySuccess;
+  const productSuccess =
+    cookieStore.get(PRODUCT_SUCCESS_COOKIE)?.value ?? resolvedSearchParams?.productSuccess;
 
-  const [{ data: categories }, { data: subcategories }, { data: products }] =
+  const [{ data: categories }, { data: subcategories }, { data: products }, { data: allProductRows }] =
     await Promise.all([
       supabase
         .from("categories")
@@ -28,12 +75,15 @@ export default async function ProductsPage() {
         .order("sort_order", { ascending: true }),
       supabase
         .from("products")
-        .select(
-          "id, name, slug, status, price, category_id, subcategory_id, created_at",
-        )
+        .select("id, name, slug, status, price, category_id, subcategory_id, created_at")
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(20),
+      supabase
+        .from("products")
+        .select("id, category_id, subcategory_id")
+        .is("deleted_at", null)
+        .not("subcategory_id", "is", null),
     ]);
 
   const { data: inventoryRows } = await supabase
@@ -45,9 +95,37 @@ export default async function ProductsPage() {
   const subcategoryMap = new Map(
     subcategories?.map((subcategory) => [subcategory.id, subcategory.name]) ?? [],
   );
-  const inventoryMap = new Map(
-    inventoryRows?.map((row) => [row.product_id ?? "", row]) ?? [],
-  );
+  const inventoryMap = new Map(inventoryRows?.map((row) => [row.product_id ?? "", row]) ?? []);
+  const categoryProductCounts = new Map<string, number>();
+  const subcategoryProductCounts = new Map<string, number>();
+  const subcategoriesByCategory = new Map<
+    string,
+    NonNullable<typeof subcategories>[number][]
+  >();
+
+  for (const product of allProductRows ?? []) {
+    categoryProductCounts.set(
+      product.category_id,
+      (categoryProductCounts.get(product.category_id) ?? 0) + 1,
+    );
+
+    const subcategoryId = product.subcategory_id;
+
+    if (!subcategoryId) {
+      continue;
+    }
+
+    subcategoryProductCounts.set(
+      subcategoryId,
+      (subcategoryProductCounts.get(subcategoryId) ?? 0) + 1,
+    );
+  }
+
+  for (const subcategory of subcategories ?? []) {
+    const scopedSubcategories = subcategoriesByCategory.get(subcategory.category_id) ?? [];
+    scopedSubcategories.push(subcategory);
+    subcategoriesByCategory.set(subcategory.category_id, scopedSubcategories);
+  }
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-8 md:px-8">
@@ -60,9 +138,9 @@ export default async function ProductsPage() {
             Categories, subcategories, and products
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-white/70">
-            This admin slice now supports the real catalog structure you
-            described: categories, dynamic subcategories, richer products, and
-            inventory-linked records.
+            This admin slice now supports the real catalog structure you described:
+            categories, dynamic subcategories, richer products, and inventory-linked
+            records.
           </p>
           <div className="mt-6 rounded-3xl border border-white/10 bg-black/10 p-4 text-sm text-white/70">
             Signed in as {profile.full_name ?? "Admin"}.
@@ -75,88 +153,69 @@ export default async function ProductsPage() {
               <h2 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-bonita-ivory)]">
                 Create category
               </h2>
-              <form action={createCategoryAction} className="mt-6 space-y-4">
-                <label className="block space-y-2 text-sm">
-                  <span>Name</span>
-                  <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="name" required type="text" />
-                </label>
-                <label className="block space-y-2 text-sm">
-                  <span>Slug</span>
-                  <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="slug" required type="text" />
-                </label>
-                <label className="block space-y-2 text-sm">
-                  <span>Sort order</span>
-                  <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue={0} name="sortOrder" type="number" />
-                </label>
-                <label className="flex items-center gap-3 text-sm text-white/80">
-                  <input defaultChecked name="isActive" type="checkbox" />
-                  Active category
-                </label>
-                <button className="rounded-full bg-[var(--color-bonita-ivory)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]" type="submit">
-                  Add category
-                </button>
-              </form>
+              <CategoryCreateForm
+                action={createCategoryAction}
+                errorMessage={categoryError}
+                resetToken={categorySuccess}
+              />
             </Surface>
 
             <Surface className="border-white/10 bg-white/8 p-6 text-white shadow-none">
               <h2 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-bonita-ivory)]">
                 Create subcategory
               </h2>
-              <form action={createSubcategoryAction} className="mt-6 space-y-4">
-                <label className="block space-y-2 text-sm">
-                  <span>Parent category</span>
-                  <select className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="categoryId" required>
-                    <option value="">Select category</option>
-                    {categories?.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block space-y-2 text-sm">
-                  <span>Name</span>
-                  <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="name" required type="text" />
-                </label>
-                <label className="block space-y-2 text-sm">
-                  <span>Slug</span>
-                  <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="slug" required type="text" />
-                </label>
-                <label className="block space-y-2 text-sm">
-                  <span>Sort order</span>
-                  <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue={0} name="sortOrder" type="number" />
-                </label>
-                <label className="flex items-center gap-3 text-sm text-white/80">
-                  <input defaultChecked name="isActive" type="checkbox" />
-                  Active subcategory
-                </label>
-                <button className="rounded-full bg-[var(--color-bonita-ivory)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]" type="submit">
-                  Add subcategory
-                </button>
-              </form>
+              <SubcategoryCreateForm
+                action={createSubcategoryAction}
+                categories={
+                  categories?.map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                  })) ?? []
+                }
+                errorMessage={subcategoryError}
+                resetToken={subcategorySuccess}
+              />
+            </Surface>
 
-              <div className="mt-8 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-rose)]">
-                  Existing subcategories
-                </p>
-                {subcategories?.length ? (
-                  subcategories.map((subcategory) => (
-                    <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm" key={subcategory.id}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="font-medium">{subcategory.name}</p>
-                          <p className="mt-1 text-white/55">
-                            {categoryMap.get(subcategory.category_id) ?? "Unknown category"}
-                          </p>
-                        </div>
-                        <span className="text-white/55">{subcategory.slug}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-white/60">No subcategories created yet.</p>
-                )}
+            <Surface className="border-white/10 bg-white/8 p-6 text-white shadow-none">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-rose)]">
+                    Category structure
+                  </p>
+                  <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl text-[var(--color-bonita-ivory)]">
+                    Categories and subcategories
+                  </h2>
+                </div>
+                <p className="text-sm text-white/55">{categories?.length ?? 0} categories</p>
               </div>
+              <div className="mt-4">
+                <ErrorMessage message={structureError} />
+              </div>
+              <CategoryStructureTree
+                categories={
+                  categories?.map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                    sortOrder: category.sort_order,
+                    isActive: category.is_active,
+                    productCount: categoryProductCounts.get(category.id) ?? 0,
+                    subcategories: [...(subcategoriesByCategory.get(category.id) ?? [])]
+                      .sort((left, right) => left.sort_order - right.sort_order)
+                      .map((subcategory) => ({
+                        id: subcategory.id,
+                        name: subcategory.name,
+                        sortOrder: subcategory.sort_order,
+                        isActive: subcategory.is_active,
+                        productCount: subcategoryProductCounts.get(subcategory.id) ?? 0,
+                      })),
+                  })) ?? []
+                }
+                onDeleteCategory={deleteCategoryAction}
+                onDeleteSubcategory={deleteSubcategoryAction}
+                onToggleCategoryStatus={toggleCategoryStatusAction}
+                onToggleSubcategoryStatus={toggleSubcategoryStatusAction}
+              />
             </Surface>
           </div>
 
@@ -164,132 +223,70 @@ export default async function ProductsPage() {
             <h2 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-bonita-ivory)]">
               Create product
             </h2>
-            <form action={createProductAction} className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="block space-y-2 text-sm md:col-span-2">
-                <span>Name</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="name" required type="text" />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Slug</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="slug" required type="text" />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>SKU</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="sku" type="text" />
-              </label>
-              <label className="block space-y-2 text-sm md:col-span-2">
-                <span>Short description</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="shortDescription" required type="text" />
-              </label>
-              <label className="block space-y-2 text-sm md:col-span-2">
-                <span>Description</span>
-                <textarea className="min-h-32 w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="description" required />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Category</span>
-                <select className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="categoryId" required>
-                  <option value="">Select category</option>
-                  {categories?.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Subcategory</span>
-                <select className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue="" name="subcategoryId">
-                  <option value="">None</option>
-                  {subcategories?.map((subcategory) => (
-                    <option key={subcategory.id} value={subcategory.id}>
-                      {subcategory.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Status</span>
-                <select className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue="draft" name="status">
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Product type</span>
-                <select className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue="ready_stock" name="productType">
-                  <option value="ready_stock">Ready stock</option>
-                  <option value="made_to_order">Made to order</option>
-                  <option value="custom_request_enabled">Custom request enabled</option>
-                </select>
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Price</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" min="0" name="price" required step="0.01" type="number" />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Compare at price</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" min="0" name="compareAtPrice" step="0.01" type="number" />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Lead time (days)</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" min="0" name="leadTimeDays" type="number" />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Stock quantity</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue={0} min="0" name="stockQuantity" type="number" />
-              </label>
-              <label className="block space-y-2 text-sm">
-                <span>Low stock threshold</span>
-                <input className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" defaultValue={3} min="0" name="lowStockThreshold" type="number" />
-              </label>
-              <label className="block space-y-2 text-sm md:col-span-2">
-                <span>Story</span>
-                <textarea className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="story" />
-              </label>
-              <label className="block space-y-2 text-sm md:col-span-2">
-                <span>Sustainability info</span>
-                <textarea className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="sustainabilityInfo" />
-              </label>
-              <label className="block space-y-2 text-sm md:col-span-2">
-                <span>Care instructions</span>
-                <textarea className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none" name="careInstructions" />
-              </label>
-              <div className="flex flex-wrap gap-4 md:col-span-2">
-                <label className="flex items-center gap-3 text-sm text-white/80">
-                  <input name="isFeatured" type="checkbox" />
-                  Featured
-                </label>
-                <label className="flex items-center gap-3 text-sm text-white/80">
-                  <input name="isBestSeller" type="checkbox" />
-                  Best seller
-                </label>
-                <label className="flex items-center gap-3 text-sm text-white/80">
-                  <input name="isLimitedEdition" type="checkbox" />
-                  Limited edition
-                </label>
-              </div>
-              <div className="md:col-span-2">
-                <button className="rounded-full bg-[var(--color-bonita-ivory)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]" type="submit">
-                  Create product
-                </button>
-              </div>
-            </form>
+            <ProductForm
+              action={createProductAction}
+              buttonLabel="Create product"
+              categories={
+                categories?.map((category) => ({
+                  id: category.id,
+                  name: category.name,
+                })) ?? []
+              }
+              defaultValues={{
+                name: "",
+                slug: "",
+                sku: "",
+                shortDescription: "",
+                description: "",
+                categoryId: "",
+                subcategoryId: "",
+                status: "draft",
+                productType: "ready_stock",
+                price: "",
+                compareAtPrice: "",
+                leadTimeDays: "",
+                stockQuantity: "0",
+                lowStockThreshold: "3",
+                story: "",
+                sustainabilityInfo: "",
+                careInstructions: "",
+                isFeatured: false,
+                isBestSeller: false,
+                isLimitedEdition: false,
+              }}
+              errorMessage={productError}
+              resetToken={productSuccess}
+              storageKey="bb-admin-product-create-form"
+              subcategories={
+                subcategories?.map((subcategory) => ({
+                  id: subcategory.id,
+                  categoryId: subcategory.category_id,
+                  name: subcategory.name,
+                })) ?? []
+              }
+            />
 
             <div className="mt-8 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-rose)]">
                   Recent products
                 </p>
-                <Link className="text-sm font-semibold text-[var(--color-bonita-ivory)]" href="/inventory">
+                <Link
+                  className="text-sm font-semibold text-[var(--color-bonita-ivory)]"
+                  href="/inventory"
+                >
                   Inventory view
                 </Link>
               </div>
               {products?.length ? (
                 products.map((product) => {
                   const inventory = inventoryMap.get(product.id);
+
                   return (
-                    <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-4 text-sm" key={product.id}>
+                    <div
+                      className="rounded-2xl border border-white/10 bg-black/10 px-4 py-4 text-sm"
+                      key={product.id}
+                    >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="font-medium">{product.name}</p>

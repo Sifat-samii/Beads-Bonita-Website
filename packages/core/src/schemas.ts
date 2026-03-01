@@ -7,32 +7,41 @@ export const productTypeSchema = z.enum([
   "custom_request_enabled",
 ]);
 
+const slugSchema = z
+  .string()
+  .min(2)
+  .max(140)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Slug must use lowercase letters, numbers, and hyphens only.",
+  );
+
 export const categorySchema = z.object({
   name: z.string().min(2).max(80),
-  slug: z.string().min(2).max(100),
-  sortOrder: z.number().int().min(0).default(0),
+  slug: slugSchema.max(100),
+  sortOrder: z.number().int().min(0),
   isActive: z.boolean().default(true),
 });
 
 export const subcategorySchema = z.object({
   categoryId: z.string().uuid(),
   name: z.string().min(2).max(80),
-  slug: z.string().min(2).max(100),
-  sortOrder: z.number().int().min(0).default(0),
+  slug: slugSchema.max(100),
+  sortOrder: z.number().int().min(0),
   isActive: z.boolean().default(true),
 });
 
 export const productSchema = z.object({
   name: z.string().min(2).max(120),
-  slug: z.string().min(2).max(140),
+  slug: slugSchema,
   shortDescription: z.string().min(10).max(240),
   description: z.string().min(20),
   categoryId: z.string().uuid(),
-  subcategoryId: z.string().uuid().nullable().optional(),
+  subcategoryId: z.string().uuid(),
   story: z.string().max(1500).optional(),
   sustainabilityInfo: z.string().max(1200).optional(),
   careInstructions: z.string().max(1200).optional(),
-  sku: z.string().min(2).max(64).optional(),
+  sku: z.string().min(2).max(64),
   price: z.number().nonnegative(),
   compareAtPrice: z.number().nonnegative().nullable().optional(),
   status: productStatusSchema,
@@ -41,8 +50,8 @@ export const productSchema = z.object({
   isFeatured: z.boolean().default(false),
   isBestSeller: z.boolean().default(false),
   isLimitedEdition: z.boolean().default(false),
-  stockQuantity: z.number().int().min(0).default(0),
-  lowStockThreshold: z.number().int().min(0).default(3),
+  stockQuantity: z.number().int().min(0),
+  lowStockThreshold: z.number().int().min(0),
 });
 
 export const testimonialSchema = z.object({

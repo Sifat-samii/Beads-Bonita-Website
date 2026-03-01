@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./brand": "./src/brand.ts",
     "./navigation": "./src/navigation.ts",
-    "./schemas": "./src/schemas.ts"
+    "./schemas": "./src/schemas.ts",
+    "./auth": "./src/auth.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

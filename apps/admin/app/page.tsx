@@ -1,7 +1,10 @@
 import { adminNavigation } from "@beads-bonita/core";
+import { requireAdmin } from "@beads-bonita/supabase/auth";
 import { SectionHeading } from "@beads-bonita/ui/section-heading";
 import { Surface } from "@beads-bonita/ui/surface";
 import { Activity, Boxes, MessageSquareQuote, PackageSearch, Users } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 const metrics = [
   { label: "Revenue", value: "SQL view scaffolded" },
@@ -10,7 +13,9 @@ const metrics = [
   { label: "Testimonials", value: "Moderation flow mapped" },
 ];
 
-export default function Page() {
+export default async function Page() {
+  const { profile, user } = await requireAdmin();
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-6 py-6 md:px-8">
       <aside className="hidden w-72 shrink-0 flex-col rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur md:flex">
@@ -25,6 +30,10 @@ export default function Page() {
             Lean Supabase-first control center for catalog, orders, customers,
             and operational insight.
           </p>
+          <div className="mt-6 rounded-3xl border border-white/10 bg-black/10 p-4 text-sm text-white/70">
+            <p>{profile.full_name ?? "Admin user"}</p>
+            <p className="mt-1">{user.email}</p>
+          </div>
         </div>
 
         <nav className="mt-10 space-y-2">
@@ -122,6 +131,15 @@ export default function Page() {
             </div>
           </Surface>
         </section>
+
+        <form action="/auth/logout" method="post">
+          <button
+            className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-ivory)]"
+            type="submit"
+          >
+            Sign out
+          </button>
+        </form>
       </div>
     </main>
   );

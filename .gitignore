@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+
+# logs
+*.log
+
+# environment
+.env
+.env.local
+.env.development
+.env.production
+
+# supabase
+.supabase
+
+# build
+dist/
+
+# OS
+.DS_Store
+Thumbs.db

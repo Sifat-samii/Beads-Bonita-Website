@@ -10,6 +10,10 @@ function getMessage(searchParams: Record<string, string | string[] | undefined>)
     return authMessages.invalidCredentials;
   }
 
+  if (error === "oauth") {
+    return authMessages.oauthFailed;
+  }
+
   if (message === "registered") {
     return authMessages.accountCreated;
   }
@@ -62,6 +66,19 @@ export default async function LoginPage({
               {statusMessage}
             </div>
           ) : null}
+          <form action="/auth/google" className="mt-6" method="post">
+            <button
+              className="w-full rounded-full border border-[var(--color-bonita-sand)] bg-white/70 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]"
+              type="submit"
+            >
+              Continue with Google
+            </button>
+          </form>
+          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_52%,white)]">
+            <span className="h-px flex-1 bg-[var(--color-bonita-sand)]" />
+            Or use email
+            <span className="h-px flex-1 bg-[var(--color-bonita-sand)]" />
+          </div>
           <form action="/auth/login" className="mt-6 space-y-4" method="post">
             <label className="block space-y-2 text-sm">
               <span>Email</span>

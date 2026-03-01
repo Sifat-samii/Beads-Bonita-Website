@@ -21,6 +21,8 @@ SSLCOMMERZ_STORE_PASSWORD=
 SSLCOMMERZ_SANDBOX=true
 ```
 
+The app scripts are configured to load this root `.env.local`, so you do not need separate env files inside `apps/storefront` or `apps/admin`.
+
 ## 3. Auth Dashboard Settings
 
 In Supabase Auth settings:
@@ -29,7 +31,27 @@ In Supabase Auth settings:
 - add Redirect URLs:
   - `http://localhost:3000`
   - `http://localhost:3001`
+  - `http://localhost:3000/auth/callback`
+  - `http://localhost:3001/auth/callback`
 - for easier local testing, you may temporarily disable email confirmation in the Email provider settings
+
+## 3.1 Google Provider Setup
+
+If you want Google or Gmail signup/login, enable the Google provider in Supabase Auth.
+
+In Supabase:
+
+- go to `Authentication -> Providers -> Google`
+- enable the provider
+- create Google OAuth credentials in Google Cloud
+- set the Google OAuth redirect URI to the Supabase callback URL shown in the provider screen
+
+You will need:
+
+- Google client ID
+- Google client secret
+
+After saving them in Supabase, the new `Continue with Google` buttons in both apps will work.
 
 ## 4. Apply the Database Migrations
 
@@ -90,9 +112,9 @@ After that, commands like `pnpm exec supabase db push` should work.
 ## 7. What to Test After Setup
 
 1. start the storefront with `pnpm dev:storefront`
-2. register a customer at `/register`
-3. log in at `/login`
+2. test email signup at `/register`
+3. test Google signup/login at `/login`
 4. confirm `/account` is accessible
 5. promote your user to admin in Supabase
 6. start the admin app with `pnpm dev:admin`
-7. log in at `http://localhost:3001/login`
+7. test admin email login or Google login at `http://localhost:3001/login`

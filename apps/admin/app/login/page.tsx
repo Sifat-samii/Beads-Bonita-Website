@@ -6,6 +6,10 @@ function resolveMessage(searchParams: Record<string, string | string[] | undefin
     return authMessages.invalidCredentials;
   }
 
+  if (searchParams.error === "oauth") {
+    return authMessages.oauthFailed;
+  }
+
   if (searchParams.error === "admin") {
     return authMessages.adminAccessRequired;
   }
@@ -50,6 +54,19 @@ export default async function AdminLoginPage({
               {statusMessage}
             </div>
           ) : null}
+          <form action="/auth/google" className="mt-6" method="post">
+            <button
+              className="w-full rounded-full border border-white/15 bg-black/10 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-ivory)]"
+              type="submit"
+            >
+              Continue with Google
+            </button>
+          </form>
+          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-white/55">
+            <span className="h-px flex-1 bg-white/15" />
+            Or use email
+            <span className="h-px flex-1 bg-white/15" />
+          </div>
           <form action="/auth/login" className="mt-6 space-y-4" method="post">
             <label className="block space-y-2 text-sm">
               <span>Email</span>

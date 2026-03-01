@@ -7,6 +7,21 @@ export const productTypeSchema = z.enum([
   "custom_request_enabled",
 ]);
 
+export const categorySchema = z.object({
+  name: z.string().min(2).max(80),
+  slug: z.string().min(2).max(100),
+  sortOrder: z.number().int().min(0).default(0),
+  isActive: z.boolean().default(true),
+});
+
+export const subcategorySchema = z.object({
+  categoryId: z.string().uuid(),
+  name: z.string().min(2).max(80),
+  slug: z.string().min(2).max(100),
+  sortOrder: z.number().int().min(0).default(0),
+  isActive: z.boolean().default(true),
+});
+
 export const productSchema = z.object({
   name: z.string().min(2).max(120),
   slug: z.string().min(2).max(140),
@@ -14,9 +29,20 @@ export const productSchema = z.object({
   description: z.string().min(20),
   categoryId: z.string().uuid(),
   subcategoryId: z.string().uuid().nullable().optional(),
+  story: z.string().max(1500).optional(),
+  sustainabilityInfo: z.string().max(1200).optional(),
+  careInstructions: z.string().max(1200).optional(),
+  sku: z.string().min(2).max(64).optional(),
   price: z.number().nonnegative(),
+  compareAtPrice: z.number().nonnegative().nullable().optional(),
   status: productStatusSchema,
   productType: productTypeSchema,
+  leadTimeDays: z.number().int().min(0).nullable().optional(),
+  isFeatured: z.boolean().default(false),
+  isBestSeller: z.boolean().default(false),
+  isLimitedEdition: z.boolean().default(false),
+  stockQuantity: z.number().int().min(0).default(0),
+  lowStockThreshold: z.number().int().min(0).default(3),
 });
 
 export const testimonialSchema = z.object({

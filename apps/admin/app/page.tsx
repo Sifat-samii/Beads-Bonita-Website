@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { adminNavigation } from "@beads-bonita/core";
 import { requireAdmin } from "@beads-bonita/supabase/auth";
 import { SectionHeading } from "@beads-bonita/ui/section-heading";
@@ -131,6 +132,25 @@ export default async function Page() {
             </div>
           </Surface>
         </section>
+
+        <Surface className="border-white/10 bg-white/8 p-6 text-white shadow-none">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-rose)]">
+                Next build slice
+              </p>
+              <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl text-[var(--color-bonita-ivory)]">
+                Start creating categories and products
+              </h2>
+            </div>
+            <Link
+              className="rounded-full bg-[var(--color-bonita-ivory)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]"
+              href="/products"
+            >
+              Open products
+            </Link>
+          </div>
+        </Surface>
 
         <form action="/auth/logout" method="post">
           <button

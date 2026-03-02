@@ -28,6 +28,22 @@ type PaymentAttemptRow = {
   id: string;
 };
 
+type ProductCheckoutRow = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  deleted_at: string | null;
+  price: number | string;
+  product_type: "ready_stock" | "made_to_order" | "custom_request_enabled";
+  lead_time_days: number | null;
+};
+
+type InventoryCheckoutRow = {
+  product_id: string | null;
+  quantity: number;
+};
+
 export async function POST(request: Request) {
   const user = await getCurrentSessionUser();
 
@@ -54,7 +70,116 @@ export async function POST(request: Request) {
   const input = parsed.data;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = getSupabaseAdminClient() as any;
-  const subtotal = calculateCheckoutSubtotal(input.items);
+  const normalizedItems = new Map<
+    string,
+    {
+      productId: string;
+      quantity: number;
+      submittedPrice: number;
+      submittedProductType: string;
+      submittedLeadTimeDays: number | null;
+    }
+  >();
+
+  for (const item of input.items) {
+    const existing = normalizedItems.get(item.productId);
+
+    normalizedItems.set(item.productId, {
+      productId: item.productId,
+      quantity: (existing?.quantity ?? 0) + item.quantity,
+      submittedPrice: item.price,
+      submittedProductType: item.productType,
+      submittedLeadTimeDays: item.leadTimeDays ?? null,
+    });
+  }
+
+  const productIds = [...normalizedItems.keys()];
+  const [{ data: products, error: productsError }, { data: inventoryRows, error: inventoryError }] =
+    (await Promise.all([
+      supabase
+        .from("products")
+        .select("id, name, slug, status, deleted_at, price, product_type, lead_time_days")
+        .in("id", productIds),
+      supabase
+        .from("inventory_stock")
+        .select("product_id, quantity")
+        .in("product_id", productIds)
+        .not("product_id", "is", null),
+    ])) as [
+      { data: ProductCheckoutRow[] | null; error: { message: string } | null },
+      { data: InventoryCheckoutRow[] | null; error: { message: string } | null },
+    ];
+
+  if (productsError) {
+    return NextResponse.json({ error: productsError.message }, { status: 500 });
+  }
+
+  if (inventoryError) {
+    return NextResponse.json({ error: inventoryError.message }, { status: 500 });
+  }
+
+  const productMap = new Map(products?.map((product) => [product.id, product]) ?? []);
+  const inventoryMap = new Map(
+    inventoryRows
+      ?.filter((row) => row.product_id)
+      .map((row) => [row.product_id as string, row.quantity]) ?? [],
+  );
+
+  const validatedItems = [];
+
+  for (const item of normalizedItems.values()) {
+    const product = productMap.get(item.productId);
+
+    if (!product || product.deleted_at || product.status !== "published") {
+      return NextResponse.json(
+        {
+          error:
+            "Your cart contains an unavailable product. Please refresh the cart and try again.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const livePrice = Number(product.price);
+    const liveLeadTimeDays = product.lead_time_days ?? null;
+
+    if (
+      item.submittedPrice !== livePrice ||
+      item.submittedProductType !== product.product_type ||
+      item.submittedLeadTimeDays !== liveLeadTimeDays
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "One or more cart items changed since they were added. Please review your cart and try again.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (product.product_type === "ready_stock") {
+      const availableQuantity = inventoryMap.get(product.id) ?? 0;
+
+      if (availableQuantity < item.quantity) {
+        return NextResponse.json(
+          {
+            error: `${product.name} does not have enough stock for the requested quantity.`,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    validatedItems.push({
+      productId: product.id,
+      name: product.name,
+      unitPrice: livePrice,
+      quantity: item.quantity,
+      lineTotal: livePrice * item.quantity,
+    });
+  }
+
+  const subtotal = validatedItems.reduce((sum, item) => sum + item.lineTotal, 0);
   const shippingTotal = 0;
   const grandTotal = subtotal + shippingTotal;
 
@@ -127,13 +252,13 @@ export async function POST(request: Request) {
   const merchantTransactionId = buildMerchantTransactionId(order.id);
 
   const { error: orderItemsError } = await supabase.from("order_items").insert(
-    input.items.map((item) => ({
+    validatedItems.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
       product_name_snapshot: item.name,
-      unit_price: item.price,
+      unit_price: item.unitPrice,
       quantity: item.quantity,
-      line_total: item.price * item.quantity,
+      line_total: item.lineTotal,
     })),
   );
 
@@ -201,8 +326,8 @@ export async function POST(request: Request) {
           addressLine2: input.customer.addressLine2,
           postalCode: input.customer.postalCode || "1200",
         },
-        itemNames: input.items.map((item) => item.name).slice(0, 3),
-        itemCount: input.items.reduce((sum, item) => sum + item.quantity, 0),
+        itemNames: validatedItems.map((item) => item.name).slice(0, 3),
+        itemCount: validatedItems.reduce((sum, item) => sum + item.quantity, 0),
       });
 
       await supabase

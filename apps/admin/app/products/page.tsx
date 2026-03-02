@@ -257,6 +257,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               errorMessage={productError}
               resetToken={productSuccess}
               storageKey="bb-admin-product-create-form"
+              existingImages={[]}
               subcategories={
                 subcategories?.map((subcategory) => ({
                   id: subcategory.id,

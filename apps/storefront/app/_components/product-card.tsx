@@ -17,16 +17,25 @@ export function ProductCard({
   return (
     <Link href={`/product/${product.slug}`}>
       <Surface className="group h-full border-white/40 bg-white/65 p-4 transition duration-300 hover:-translate-y-1 hover:bg-white/78">
-        <div className="flex h-56 items-end rounded-[1.5rem] bg-[radial-gradient(circle_at_top,rgba(211,180,167,0.26),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.85),rgba(236,223,208,0.7))] p-4">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-moss)]">
+        <div className="relative flex h-56 items-end overflow-hidden rounded-[1.5rem] bg-[radial-gradient(circle_at_top,rgba(211,180,167,0.26),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.85),rgba(236,223,208,0.7))] p-4">
+          {product.primaryImageUrl ? (
+            <img
+              alt={product.name}
+              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+              loading="lazy"
+              src={product.primaryImageUrl}
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-transparent" />
+          <div className="relative space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
               {categoryName}
               {subcategoryName ? ` / ${subcategoryName}` : ""}
             </p>
             <div className="flex flex-wrap gap-2">
               {badges.map((badge) => (
                 <span
-                  className="rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]"
+                  className="rounded-full border border-white/70 bg-white/75 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]"
                   key={badge}
                 >
                   {badge}

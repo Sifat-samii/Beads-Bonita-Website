@@ -1,11 +1,23 @@
 import Link from "next/link";
+import { getPublicStorageUrl } from "@beads-bonita/supabase";
 import { requireAdmin } from "@beads-bonita/supabase/auth";
 import { getSupabaseAdminClient } from "@beads-bonita/supabase/server";
 import { Surface } from "@beads-bonita/ui/surface";
 import { ProductForm } from "../product-form";
-import { deleteProductAction, updateProductAction } from "../actions";
+import {
+  deleteProductAction,
+  deleteProductImageAction,
+  updateProductAction,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
+
+type ProductImageRow = {
+  id: string;
+  storage_path: string;
+  alt_text: string | null;
+  sort_order: number;
+};
 
 export default async function ProductDetailPage({
   params,
@@ -17,9 +29,15 @@ export default async function ProductDetailPage({
   await requireAdmin();
   const { productId } = await params;
   const resolvedSearchParams = await searchParams;
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient() as any;
 
-  const [{ data: product }, { data: inventory }, { data: categories }, { data: subcategories }] =
+  const [
+    { data: product },
+    { data: inventory },
+    { data: categories },
+    { data: subcategories },
+    { data: productImages },
+  ] =
     await Promise.all([
       supabase
         .from("products")
@@ -43,6 +61,11 @@ export default async function ProductDetailPage({
         .select("id, category_id, name")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true }),
+      supabase
+        .from("product_images")
+        .select("id, storage_path, alt_text, sort_order")
+        .eq("product_id", productId)
+        .order("sort_order", { ascending: true }),
     ]);
 
   if (!product) {
@@ -65,6 +88,7 @@ export default async function ProductDetailPage({
 
   const updateAction = updateProductAction.bind(null, productId);
   const deleteAction = deleteProductAction.bind(null, productId);
+  const deleteImageAction = deleteProductImageAction.bind(null, productId);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-8 md:px-8">
@@ -94,7 +118,7 @@ export default async function ProductDetailPage({
             buttonLabel="Save changes"
             cancelHref="/products"
             categories={
-              categories?.map((category) => ({
+              categories?.map((category: { id: string; name: string }) => ({
                 id: category.id,
                 name: category.name,
               })) ?? []
@@ -126,10 +150,18 @@ export default async function ProductDetailPage({
             errorMessage={resolvedSearchParams?.error}
             deleteAction={deleteAction}
             deleteProductName={product.name}
+            deleteImageAction={deleteImageAction}
+            existingImages={
+              productImages?.map((image: ProductImageRow) => ({
+                id: image.id,
+                url: getPublicStorageUrl("product-images", image.storage_path),
+                altText: image.alt_text,
+              })) ?? []
+            }
             productId={productId}
             storageKey={`bb-admin-product-edit-form-${productId}`}
             subcategories={
-              subcategories?.map((subcategory) => ({
+              subcategories?.map((subcategory: { id: string; category_id: string; name: string }) => ({
                 id: subcategory.id,
                 categoryId: subcategory.category_id,
                 name: subcategory.name,

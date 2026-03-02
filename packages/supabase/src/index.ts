@@ -3,3 +3,4 @@ export * from "./client";
 export * from "./server";
 export * from "./env";
 export * from "./middleware";
+export * from "./storage";

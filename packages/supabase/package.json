@@ -10,6 +10,7 @@
     "./middleware": "./src/middleware.ts",
     "./server": "./src/server.ts",
     "./env": "./src/env.ts",
+    "./storage": "./src/storage.ts",
     "./database.generated": "./src/database.generated.ts"
   },
   "scripts": {

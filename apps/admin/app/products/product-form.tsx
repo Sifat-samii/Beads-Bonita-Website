@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DeleteProductButton } from "./delete-product-button";
 import { ErrorMessage } from "./error-message";
 import { ProductCategorySubcategoryFields } from "./product-category-subcategory-fields";
@@ -54,6 +54,12 @@ type ProductFormProps = {
   cancelHref?: string;
   deleteAction?: () => Promise<void>;
   deleteProductName?: string;
+  existingImages?: Array<{
+    id: string;
+    url: string;
+    altText: string | null;
+  }>;
+  deleteImageAction?: (imageId: string, formData: FormData) => Promise<void>;
 };
 
 export function ProductForm({
@@ -69,9 +75,23 @@ export function ProductForm({
   cancelHref,
   deleteAction,
   deleteProductName,
+  existingImages = [],
+  deleteImageAction,
 }: ProductFormProps) {
   const [draft, setDraft] = useState<ProductDraft>(defaultValues);
   const [formVersion, setFormVersion] = useState(0);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+
+  const selectedImagePreviews = useMemo(
+    () =>
+      selectedImages.map((file) => ({
+        file,
+        key: `${file.name}-${file.size}-${file.lastModified}`,
+        url: URL.createObjectURL(file),
+      })),
+    [selectedImages],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -105,6 +125,7 @@ export function ProductForm({
     }
 
     setDraft(defaultValues);
+    setSelectedImages([]);
     setFormVersion((current) => current + 1);
     window.sessionStorage.removeItem(storageKey);
     void fetch("/products/flash-error", {
@@ -112,6 +133,49 @@ export function ProductForm({
       credentials: "same-origin",
     });
   }, [defaultValues, resetToken, storageKey]);
+
+  useEffect(() => {
+    return () => {
+      for (const preview of selectedImagePreviews) {
+        URL.revokeObjectURL(preview.url);
+      }
+    };
+  }, [selectedImagePreviews]);
+
+  function syncSelectedFiles(nextFiles: File[]) {
+    setSelectedImages(nextFiles);
+
+    if (!imageInputRef.current) {
+      return;
+    }
+
+    const dataTransfer = new DataTransfer();
+
+    for (const file of nextFiles) {
+      dataTransfer.items.add(file);
+    }
+
+    imageInputRef.current.files = dataTransfer.files;
+  }
+
+  function mergeSelectedFiles(nextFiles: File[]) {
+    const mergedFiles = [...selectedImages];
+
+    for (const file of nextFiles) {
+      const exists = mergedFiles.some(
+        (currentFile) =>
+          currentFile.name === file.name &&
+          currentFile.size === file.size &&
+          currentFile.lastModified === file.lastModified,
+      );
+
+      if (!exists) {
+        mergedFiles.push(file);
+      }
+    }
+
+    syncSelectedFiles(mergedFiles);
+  }
 
   return (
     <form
@@ -294,6 +358,86 @@ export function ProductForm({
           name="careInstructions"
         />
       </label>
+      <div className="space-y-4 md:col-span-2">
+        <label className="block space-y-2 text-sm">
+          <span>Product images</span>
+          <input
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-white file:mr-4 file:rounded-full file:border-0 file:bg-[var(--color-bonita-ivory)] file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-[0.14em] file:text-[var(--color-bonita-charcoal)]"
+            multiple
+            name="images"
+            onChange={(event) => {
+              mergeSelectedFiles(Array.from(event.target.files ?? []));
+            }}
+            ref={imageInputRef}
+            type="file"
+          />
+        </label>
+        <p className="text-xs text-white/55">
+          Upload JPG, PNG, WebP, or AVIF files up to 5 MB each. New uploads are added
+          to the end of the product gallery.
+        </p>
+        {selectedImagePreviews.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {selectedImagePreviews.map((preview) => (
+              <div
+                className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/10"
+                key={preview.key}
+              >
+                <button
+                  className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm font-semibold text-white"
+                  onClick={() => {
+                    syncSelectedFiles(
+                      selectedImages.filter((file) => file !== preview.file),
+                    );
+                  }}
+                  type="button"
+                >
+                  x
+                </button>
+                <img
+                  alt={preview.file.name}
+                  className="h-48 w-full object-cover"
+                  src={preview.url}
+                />
+                <div className="p-4">
+                  <p className="truncate text-xs text-white/75">{preview.file.name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {existingImages.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {existingImages.map((image) => (
+              <div
+                className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/10"
+                key={image.id}
+              >
+                <img
+                  alt={image.altText ?? (draft.name || "Product image")}
+                  className="h-48 w-full object-cover"
+                  src={image.url}
+                />
+                <div className="space-y-3 p-4">
+                  <p className="text-xs text-white/65">
+                    {image.altText ?? "No alt text"}
+                  </p>
+                  {deleteImageAction ? (
+                    <button
+                      className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-ivory)]"
+                      formAction={deleteImageAction.bind(null, image.id)}
+                      type="submit"
+                    >
+                      Remove image
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <div className="flex flex-wrap gap-4 md:col-span-2">
         <label className="flex items-center gap-3 text-sm text-white/80">
           <input defaultChecked={draft.isFeatured} name="isFeatured" type="checkbox" />

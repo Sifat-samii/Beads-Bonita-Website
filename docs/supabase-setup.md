@@ -80,6 +80,21 @@ npx supabase start
 npx supabase db reset
 ```
 
+## 4.1 Storage Buckets
+
+The product media flow expects a public bucket named `product-images`.
+
+The admin upload flow now attempts to create it automatically with the service-role key.
+If auto-creation fails, create it manually in Supabase Storage with:
+
+- bucket name: `product-images`
+- public bucket: `true`
+
+You can add more buckets later, for example:
+
+- `testimonial-images`
+- `user-avatars`
+
 ## 5. Promote Your Admin User
 
 After you register your first account in the storefront, open Supabase and run:

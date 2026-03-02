@@ -41,14 +41,20 @@ export default async function ProductDetailPage({
       <section className="grid gap-6 pt-4 lg:grid-cols-[0.95fr_1.05fr]">
         <Surface className="border-white/40 bg-white/65 p-5">
           {images.length ? (
-            <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               {images.map((image) => (
                 <div
-                  className="min-h-80 rounded-[1.75rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(236,223,208,0.72))] p-4"
+                  className="relative min-h-80 overflow-hidden rounded-[1.75rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(236,223,208,0.72))] p-4"
                   key={image.id}
                 >
-                  <div className="flex h-full items-end rounded-[1.35rem] border border-white/50 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-bonita-moss)]">
+                  <img
+                    alt={image.altText ?? product.name}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    src={image.url}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
+                  <div className="relative flex h-full items-end rounded-[1.35rem] border border-white/50 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white">
                       {image.altText ?? product.name}
                     </p>
                   </div>

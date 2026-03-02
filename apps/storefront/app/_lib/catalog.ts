@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { getPublicStorageUrl } from "@beads-bonita/supabase";
 import { createSupabaseServerClient } from "@beads-bonita/supabase/server";
 
 export type StoreCategory = {
@@ -31,6 +32,7 @@ export type StoreProductCard = {
   isBestSeller: boolean;
   isLimitedEdition: boolean;
   createdAt: string;
+  primaryImageUrl: string | null;
 };
 
 export type StoreProductDetail = {
@@ -57,6 +59,7 @@ export type StoreProductDetail = {
 export type ProductImage = {
   id: string;
   storagePath: string;
+  url: string;
   altText: string | null;
   sortOrder: number;
 };
@@ -65,6 +68,12 @@ type ProductImageRow = {
   id: string;
   storage_path: string;
   alt_text: string | null;
+  sort_order: number;
+};
+
+type ProductCardImageRow = {
+  product_id: string;
+  storage_path: string;
   sort_order: number;
 };
 
@@ -85,6 +94,7 @@ function toProductCard(row: {
   is_best_seller: boolean;
   is_limited_edition: boolean;
   created_at: string;
+  primary_image_path?: string | null;
 }): StoreProductCard {
   return {
     id: row.id,
@@ -101,6 +111,9 @@ function toProductCard(row: {
     isBestSeller: row.is_best_seller,
     isLimitedEdition: row.is_limited_edition,
     createdAt: row.created_at,
+    primaryImageUrl: row.primary_image_path
+      ? getPublicStorageUrl("product-images", row.primary_image_path)
+      : null,
   };
 }
 
@@ -186,7 +199,43 @@ export async function getPublishedProducts(input?: {
     throw new Error(error.message);
   }
 
-  return (data ?? []).map(toProductCard);
+  const products = (data ?? []).map(toProductCard);
+
+  if (!products.length) {
+    return products;
+  }
+
+  const { data: imageRows, error: imagesError } = (await supabase
+    .from("product_images")
+    .select("product_id, storage_path, sort_order")
+    .in(
+      "product_id",
+      products.map((product) => product.id),
+    )
+    .order("sort_order", { ascending: true })) as {
+    data: ProductCardImageRow[] | null;
+    error: { message: string } | null;
+  };
+
+  if (imagesError) {
+    throw new Error(imagesError.message);
+  }
+
+  const imageByProductId = new Map<string, string>();
+
+  for (const image of imageRows ?? []) {
+    if (!imageByProductId.has(image.product_id)) {
+      imageByProductId.set(
+        image.product_id,
+        getPublicStorageUrl("product-images", image.storage_path),
+      );
+    }
+  }
+
+  return products.map((product) => ({
+    ...product,
+    primaryImageUrl: imageByProductId.get(product.id) ?? null,
+  }));
 }
 
 export const getPublishedProductBySlug = cache(
@@ -248,6 +297,7 @@ export const getPublishedProductBySlug = cache(
       images: ((images ?? []) as ProductImageRow[]).map((image) => ({
         id: image.id,
         storagePath: image.storage_path,
+        url: getPublicStorageUrl("product-images", image.storage_path),
         altText: image.alt_text,
         sortOrder: image.sort_order,
       })),

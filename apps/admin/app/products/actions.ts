@@ -13,6 +13,15 @@ import {
   getProductFlashSuccessCookieName,
 } from "./flash-state";
 
+const PRODUCT_IMAGES_BUCKET = "product-images";
+const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PRODUCT_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+]);
+
 function asNumber(value: FormDataEntryValue | null, fallback = 0) {
   if (value === null || value === "") {
     return fallback;
@@ -75,6 +84,143 @@ function redirectWithQueryError(path: string, message: string): never {
 
 function isUniqueConstraintError(error: { code?: string; message: string }) {
   return error.code === "23505" || error.message.toLowerCase().includes("duplicate key value");
+}
+
+function sanitizeFileNameSegment(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function ensureProductImagesBucket() {
+  const supabase = getSupabaseAdminClient() as any;
+  const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+
+  if (bucketsError) {
+    throw new Error(`Could not inspect storage buckets: ${bucketsError.message}`);
+  }
+
+  const bucketExists = (buckets ?? []).some(
+    (bucket: { name?: string; id?: string }) =>
+      bucket.name === PRODUCT_IMAGES_BUCKET || bucket.id === PRODUCT_IMAGES_BUCKET,
+  );
+
+  if (bucketExists) {
+    return;
+  }
+
+  const { error: createBucketError } = await supabase.storage.createBucket(
+    PRODUCT_IMAGES_BUCKET,
+    {
+      public: true,
+      fileSizeLimit: `${MAX_PRODUCT_IMAGE_BYTES}`,
+      allowedMimeTypes: [...ALLOWED_PRODUCT_IMAGE_TYPES],
+    },
+  );
+
+  if (createBucketError) {
+    throw new Error(
+      `The "${PRODUCT_IMAGES_BUCKET}" bucket is missing and could not be created automatically: ${createBucketError.message}`,
+    );
+  }
+}
+
+async function uploadProductImages(input: {
+  productId: string;
+  productName: string;
+  files: FormDataEntryValue[];
+}) {
+  // Generated DB types in this repo do not currently include product_images.
+  // Cast locally so the storage pipeline can be implemented without blocking on typegen.
+  const supabase = getSupabaseAdminClient() as any;
+  const imageFiles = input.files.filter((file): file is File => {
+    if (!file || typeof file === "string") {
+      return false;
+    }
+
+    return (
+      typeof file.name === "string" &&
+      typeof file.type === "string" &&
+      typeof file.size === "number" &&
+      typeof file.arrayBuffer === "function" &&
+      file.size > 0
+    );
+  });
+
+  if (!imageFiles.length) {
+    return;
+  }
+
+  await ensureProductImagesBucket();
+
+  for (const file of imageFiles) {
+    if (!ALLOWED_PRODUCT_IMAGE_TYPES.has(file.type)) {
+      throw new Error(`${file.name} must be a JPG, PNG, WebP, or AVIF image.`);
+    }
+
+    if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
+      throw new Error(`${file.name} exceeds the 5 MB upload limit.`);
+    }
+  }
+
+  const { data: existingImages, error: existingImagesError } = await supabase
+    .from("product_images")
+    .select("sort_order")
+    .eq("product_id", input.productId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  if (existingImagesError) {
+    throw new Error(existingImagesError.message);
+  }
+
+  let nextSortOrder = (existingImages?.[0]?.sort_order ?? -1) + 1;
+
+  for (const file of imageFiles) {
+    const fileExtension = file.name.includes(".")
+      ? file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+      : "jpg";
+    const baseName =
+      sanitizeFileNameSegment(input.productName) ||
+      sanitizeFileNameSegment(file.name.replace(/\.[^.]+$/, "")) ||
+      "product-image";
+    const storagePath = `${input.productId}/${Date.now()}-${nextSortOrder}-${baseName}.${fileExtension}`;
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    const { error: uploadError } = await supabase.storage
+      .from(PRODUCT_IMAGES_BUCKET)
+      .upload(storagePath, fileBuffer, {
+        cacheControl: "3600",
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      if (uploadError.message.toLowerCase().includes("bucket not found")) {
+        throw new Error(
+          `The "${PRODUCT_IMAGES_BUCKET}" storage bucket is not available. Confirm your service-role key is valid and retry.`,
+        );
+      }
+
+      throw new Error(uploadError.message);
+    }
+
+    const { error: imageInsertError } = await supabase.from("product_images").insert({
+      product_id: input.productId,
+      storage_path: storagePath,
+      alt_text: input.productName,
+      sort_order: nextSortOrder,
+    });
+
+    if (imageInsertError) {
+      await supabase.storage.from(PRODUCT_IMAGES_BUCKET).remove([storagePath]);
+      throw new Error(imageInsertError.message);
+    }
+
+    nextSortOrder += 1;
+  }
 }
 
 async function ensureScopedProductSubcategory(
@@ -447,6 +593,7 @@ export async function toggleCategoryStatusAction(categoryId: string, nextIsActiv
 }
 
 export async function createProductAction(formData: FormData) {
+  const uploadedImages = formData.getAll("images");
   const parsed = productSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
     slug: String(formData.get("slug") ?? "").trim(),
@@ -542,9 +689,16 @@ export async function createProductAction(formData: FormData) {
     throw new Error(stockError.message);
   }
 
+  await uploadProductImages({
+    productId: product.id,
+    productName: data.name,
+    files: uploadedImages,
+  });
+
   await clearErrorCookie("product");
   await setSuccessCookie("product");
   revalidatePath("/products");
+  revalidatePath("/shop");
 }
 
 export async function createSubcategoryAction(formData: FormData) {
@@ -830,6 +984,7 @@ export async function toggleSubcategoryStatusAction(
 }
 
 export async function updateProductAction(productId: string, formData: FormData) {
+  const uploadedImages = formData.getAll("images");
   const parsed = productSchema.safeParse({
     name: String(formData.get("name") ?? "").trim(),
     slug: String(formData.get("slug") ?? "").trim(),
@@ -944,27 +1099,58 @@ export async function updateProductAction(productId: string, formData: FormData)
     }
   }
 
+  await uploadProductImages({
+    productId,
+    productName: data.name,
+    files: uploadedImages,
+  });
+
   revalidatePath("/products");
   revalidatePath(`/products/${productId}`);
+  revalidatePath("/shop");
+  revalidatePath(`/product/${data.slug}`);
   redirect("/products");
 }
 
 export async function deleteProductAction(productId: string) {
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient() as any;
 
-  const { data: product, error: productError } = await supabase
-    .from("products")
-    .select("id, name")
-    .eq("id", productId)
-    .is("deleted_at", null)
-    .maybeSingle();
+  const [{ data: product, error: productError }, { data: productImages, error: productImagesError }] =
+    await Promise.all([
+      supabase
+        .from("products")
+        .select("id, name, slug")
+        .eq("id", productId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabase
+        .from("product_images")
+        .select("storage_path")
+        .eq("product_id", productId),
+    ]);
 
   if (productError) {
     throw new Error(productError.message);
   }
 
+  if (productImagesError) {
+    throw new Error(productImagesError.message);
+  }
+
   if (!product) {
-    redirectWithError("product", "Product not found.");
+    return redirectWithError("product", "Product not found.");
+  }
+
+  const productData = product;
+
+  if (productImages?.length) {
+    const { error: storageDeleteError } = await supabase.storage
+      .from(PRODUCT_IMAGES_BUCKET)
+      .remove(productImages.map((image: { storage_path: string }) => image.storage_path));
+
+    if (storageDeleteError) {
+      throw new Error(storageDeleteError.message);
+    }
   }
 
   const [{ error: testimonialsDeleteError }, { error: orderItemsDeleteError }] =
@@ -991,7 +1177,54 @@ export async function deleteProductAction(productId: string) {
   }
 
   revalidatePath("/products");
+  revalidatePath("/shop");
+  revalidatePath(`/product/${productData.slug}`);
   redirect("/products");
+}
+
+export async function deleteProductImageAction(
+  productId: string,
+  imageId: string,
+  _formData: FormData,
+) {
+  const supabase = getSupabaseAdminClient() as any;
+
+  const { data: image, error: imageError } = await supabase
+    .from("product_images")
+    .select("id, storage_path")
+    .eq("id", imageId)
+    .eq("product_id", productId)
+    .maybeSingle();
+
+  if (imageError) {
+    throw new Error(imageError.message);
+  }
+
+  if (!image) {
+    return redirectWithQueryError(`/products/${productId}`, "Product image not found.");
+  }
+
+  const { error: storageDeleteError } = await supabase.storage
+    .from(PRODUCT_IMAGES_BUCKET)
+    .remove([image.storage_path]);
+
+  if (storageDeleteError) {
+    throw new Error(storageDeleteError.message);
+  }
+
+  const { error: imageDeleteError } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("id", imageId);
+
+  if (imageDeleteError) {
+    throw new Error(imageDeleteError.message);
+  }
+
+  revalidatePath("/products");
+  revalidatePath(`/products/${productId}`);
+  revalidatePath("/shop");
+  redirect(`/products/${productId}`);
 }
 
 export async function adjustInventoryAction(formData: FormData) {

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { authMessages, brand } from "@beads-bonita/core";
-import { Surface } from "@beads-bonita/ui/surface";
+import { authMessages } from "@beads-bonita/core";
+import { CustomerAuthShell } from "../_components/customer-auth-shell";
 
 function getMessage(searchParams: Record<string, string | string[] | undefined>) {
   const error = searchParams.error;
@@ -25,6 +25,30 @@ function getMessage(searchParams: Record<string, string | string[] | undefined>)
   return null;
 }
 
+function Field({
+  label,
+  name,
+  type,
+}: {
+  label: string;
+  name: string;
+  type: string;
+}) {
+  return (
+    <label className="block border-b border-black/12 pb-4 pt-6 first:pt-0">
+      <span className="block text-[0.98rem] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_58%,white)]">
+        {label}
+      </span>
+      <input
+        className="mt-4 w-full border-none bg-transparent px-0 py-0 text-lg text-[var(--color-bonita-charcoal)] outline-none placeholder:text-[color-mix(in_srgb,var(--color-bonita-charcoal)_32%,white)]"
+        name={name}
+        required
+        type={type}
+      />
+    </label>
+  );
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -34,85 +58,84 @@ export default async function LoginPage({
   const statusMessage = getMessage(params);
 
   return (
-    <main className="page-shell min-h-screen px-6 py-10">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <Surface className="p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-bonita-moss)]">
-            Welcome back
-          </p>
-          <h1 className="mt-4 font-[family-name:var(--font-display)] text-5xl text-[var(--color-bonita-charcoal)]">
-            Sign in to continue your BEADS BONITA journey.
-          </h1>
-          <p className="mt-5 text-sm leading-7 text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-            Access saved addresses, wishlist items, order history, and future
-            testimonial submissions from your account.
-          </p>
-          <div className="mt-8 rounded-[1.5rem] bg-[var(--color-bonita-ivory)] p-5">
-            <p className="text-sm font-medium text-[var(--color-bonita-cocoa)]">
-              {brand.tagline}
-            </p>
-          </div>
-        </Surface>
-
-        <Surface className="p-8">
-          <h2 className="font-[family-name:var(--font-display)] text-4xl text-[var(--color-bonita-charcoal)]">
-            Customer Login
-          </h2>
-          <p className="mt-3 text-sm text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-            Use the account created with your email and password.
-          </p>
-          {statusMessage ? (
-            <div className="mt-6 rounded-2xl border border-[var(--color-bonita-sand)] bg-white/70 px-4 py-3 text-sm text-[var(--color-bonita-cocoa)]">
-              {statusMessage}
-            </div>
-          ) : null}
-          <form action="/auth/google" className="mt-6" method="post">
+    <CustomerAuthShell
+      formDescription="Use your account to move through checkout faster, view your profile, and continue into the growing member experience."
+      formTitle="Customer Sign In"
+      mode="login"
+      primaryForm={
+        <div className="space-y-8">
+          <form action="/auth/google" method="post">
             <button
-              className="w-full rounded-full border border-[var(--color-bonita-sand)] bg-white/70 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]"
+              className="inline-flex min-h-14 w-full items-center justify-center rounded-none border border-black/12 bg-transparent px-6 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-charcoal)] transition hover:bg-[rgba(30,23,18,0.04)]"
               type="submit"
             >
               Continue with Google
             </button>
           </form>
-          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_52%,white)]">
-            <span className="h-px flex-1 bg-[var(--color-bonita-sand)]" />
-            Or use email
-            <span className="h-px flex-1 bg-[var(--color-bonita-sand)]" />
+
+          <div className="flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_42%,white)]">
+            <span className="h-px flex-1 bg-black/10" />
+            Or sign in with email
+            <span className="h-px flex-1 bg-black/10" />
           </div>
-          <form action="/auth/login" className="mt-6 space-y-4" method="post">
-            <label className="block space-y-2 text-sm">
-              <span>Email</span>
-              <input
-                className="w-full rounded-2xl border border-[var(--color-bonita-sand)] bg-white/80 px-4 py-3 outline-none"
-                name="email"
-                required
-                type="email"
-              />
-            </label>
-            <label className="block space-y-2 text-sm">
-              <span>Password</span>
-              <input
-                className="w-full rounded-2xl border border-[var(--color-bonita-sand)] bg-white/80 px-4 py-3 outline-none"
-                name="password"
-                required
-                type="password"
-              />
-            </label>
+
+          <form action="/auth/login" className="space-y-5" method="post">
+            <Field label="Email address*" name="email" type="email" />
+            <Field label="Password*" name="password" type="password" />
+
+            <div className="flex justify-end pt-1">
+              <p className="text-sm text-[var(--color-bonita-cocoa)] underline decoration-black/15 underline-offset-4">
+                Forgot password
+              </p>
+            </div>
+
             <button
-              className="w-full rounded-full bg-[var(--color-bonita-charcoal)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-ivory)]"
+              className="mt-3 inline-flex min-h-15 w-full items-center justify-center bg-[var(--color-bonita-charcoal)] px-6 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-ivory)] transition hover:bg-[color-mix(in_srgb,var(--color-bonita-charcoal)_90%,black)]"
               type="submit"
             >
-              Login
+              Sign In
             </button>
           </form>
-          <p className="mt-6 text-sm text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-            New here?{" "}
-            <Link className="font-semibold text-[var(--color-bonita-cocoa)]" href="/register">
-              Create an account
-            </Link>
-          </p>
-        </Surface>
-      </div>
-    </main>
+        </div>
+      }
+      secondaryAction={
+        <div className="space-y-10">
+          <h3 className="font-[family-name:var(--font-display)] text-[2.4rem] leading-none text-[var(--color-bonita-charcoal)]">
+            Create Account
+          </h3>
+          <div className="grid gap-x-12 gap-y-4 text-[1.02rem] leading-8 text-[var(--color-bonita-charcoal)] sm:grid-cols-2">
+            <ul className="space-y-3">
+              <li className="flex gap-3">
+                <span className="mt-3 h-1.5 w-1.5 rounded-full bg-black" />
+                Faster Checkout
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-3 h-1.5 w-1.5 rounded-full bg-black" />
+                Access your order history
+              </li>
+            </ul>
+            <ul className="space-y-3">
+              <li className="flex gap-3">
+                <span className="mt-3 h-1.5 w-1.5 rounded-full bg-black" />
+                View saved addresses &amp; payments
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-3 h-1.5 w-1.5 rounded-full bg-black" />
+                Receive email communications
+              </li>
+            </ul>
+          </div>
+          <Link
+            className="inline-flex min-h-15 w-full items-center justify-center border border-black/12 px-6 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-charcoal)] transition hover:bg-[rgba(30,23,18,0.04)]"
+            href="/register"
+          >
+            Create Account
+          </Link>
+        </div>
+      }
+      statusMessage={statusMessage}
+      subtitle="Sign in to check out faster, enjoy exclusive perks, and access the full member experience."
+      title="Buy Bonita, Be Bonita!"
+    />
   );
 }

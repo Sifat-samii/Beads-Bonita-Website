@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Surface } from "@beads-bonita/ui/surface";
+import { CustomerAuthShell } from "../_components/customer-auth-shell";
 
 function getError(searchParams: Record<string, string | string[] | undefined>) {
   if (searchParams.error === "register") {
@@ -7,6 +7,33 @@ function getError(searchParams: Record<string, string | string[] | undefined>) {
   }
 
   return null;
+}
+
+function Field({
+  label,
+  name,
+  type,
+  minLength,
+}: {
+  label: string;
+  name: string;
+  type: string;
+  minLength?: number;
+}) {
+  return (
+    <label className="block border-b border-black/12 pb-4 pt-6 first:pt-0">
+      <span className="block text-[0.98rem] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_58%,white)]">
+        {label}
+      </span>
+      <input
+        className="mt-4 w-full border-none bg-transparent px-0 py-0 text-lg text-[var(--color-bonita-charcoal)] outline-none placeholder:text-[color-mix(in_srgb,var(--color-bonita-charcoal)_32%,white)]"
+        minLength={minLength}
+        name={name}
+        required
+        type={type}
+      />
+    </label>
+  );
 }
 
 export default async function RegisterPage({
@@ -18,87 +45,88 @@ export default async function RegisterPage({
   const errorMessage = getError(params);
 
   return (
-    <main className="page-shell min-h-screen px-6 py-10">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-        <Surface className="p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-bonita-moss)]">
-            Join the community
-          </p>
-          <h1 className="mt-4 font-[family-name:var(--font-display)] text-5xl text-[var(--color-bonita-charcoal)]">
-            Create your customer account.
-          </h1>
-          <p className="mt-5 text-sm leading-7 text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-            Your account will be used for order history, wishlist access,
-            address management, and customer testimonial submissions.
-          </p>
-        </Surface>
-
-        <Surface className="p-8">
-          <h2 className="font-[family-name:var(--font-display)] text-4xl text-[var(--color-bonita-charcoal)]">
-            Register
-          </h2>
-          {errorMessage ? (
-            <div className="mt-6 rounded-2xl border border-[var(--color-bonita-sand)] bg-white/70 px-4 py-3 text-sm text-[var(--color-bonita-cocoa)]">
-              {errorMessage}
-            </div>
-          ) : null}
-          <form action="/auth/google" className="mt-6" method="post">
+    <CustomerAuthShell
+      formDescription="Set up your customer account once, then return to a cleaner, faster, and more personalized buying experience."
+      formTitle="Create Your Account"
+      mode="register"
+      primaryForm={
+        <div className="space-y-8">
+          <form action="/auth/google" method="post">
             <button
-              className="w-full rounded-full border border-[var(--color-bonita-sand)] bg-white/70 px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-charcoal)]"
+              className="inline-flex min-h-14 w-full items-center justify-center rounded-none border border-black/12 bg-transparent px-6 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-charcoal)] transition hover:bg-[rgba(30,23,18,0.04)]"
               type="submit"
             >
               Sign up with Google
             </button>
           </form>
-          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_52%,white)]">
-            <span className="h-px flex-1 bg-[var(--color-bonita-sand)]" />
-            Or use email
-            <span className="h-px flex-1 bg-[var(--color-bonita-sand)]" />
+
+          <div className="flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_42%,white)]">
+            <span className="h-px flex-1 bg-black/10" />
+            Or register with email
+            <span className="h-px flex-1 bg-black/10" />
           </div>
-          <form action="/auth/register" className="mt-6 space-y-4" method="post">
-            <label className="block space-y-2 text-sm">
-              <span>Full name</span>
-              <input
-                className="w-full rounded-2xl border border-[var(--color-bonita-sand)] bg-white/80 px-4 py-3 outline-none"
-                name="fullName"
-                required
-                type="text"
-              />
-            </label>
-            <label className="block space-y-2 text-sm">
-              <span>Email</span>
-              <input
-                className="w-full rounded-2xl border border-[var(--color-bonita-sand)] bg-white/80 px-4 py-3 outline-none"
-                name="email"
-                required
-                type="email"
-              />
-            </label>
-            <label className="block space-y-2 text-sm">
-              <span>Password</span>
-              <input
-                className="w-full rounded-2xl border border-[var(--color-bonita-sand)] bg-white/80 px-4 py-3 outline-none"
-                minLength={8}
-                name="password"
-                required
-                type="password"
-              />
-            </label>
+
+          <form action="/auth/register" className="space-y-5" method="post">
+            <Field label="Full name*" name="fullName" type="text" />
+            <Field label="Email address*" name="email" type="email" />
+            <Field label="Password*" minLength={8} name="password" type="password" />
+
             <button
-              className="w-full rounded-full bg-[var(--color-bonita-charcoal)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-bonita-ivory)]"
+              className="mt-3 inline-flex min-h-15 w-full items-center justify-center bg-[var(--color-bonita-charcoal)] px-6 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-ivory)] transition hover:bg-[color-mix(in_srgb,var(--color-bonita-charcoal)_90%,black)]"
               type="submit"
             >
               Create account
             </button>
           </form>
-          <p className="mt-6 text-sm text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-            Already have an account?{" "}
-            <Link className="font-semibold text-[var(--color-bonita-cocoa)]" href="/login">
-              Sign in
-            </Link>
-          </p>
-        </Surface>
-      </div>
-    </main>
+        </div>
+      }
+      secondaryAction={
+        <div className="space-y-8">
+          <h3 className="font-[family-name:var(--font-display)] text-4xl text-[var(--color-bonita-charcoal)]">
+            Already registered?
+          </h3>
+          <Link
+            className="inline-flex min-h-15 w-full items-center justify-center border border-black/12 px-6 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-charcoal)] transition hover:bg-[rgba(30,23,18,0.04)]"
+            href="/login"
+          >
+            Sign in instead
+          </Link>
+        </div>
+      }
+      statusMessage={errorMessage}
+      subtitle={
+        <div className="grid max-w-3xl gap-x-16 gap-y-0.5 sm:grid-cols-2">
+          <div className="space-y-0.5">
+            <div className="flex items-start gap-3">
+              <span className="mt-3 h-1.5 w-1.5 rounded-full bg-[var(--color-bonita-cocoa)]" />
+              <span>Faster Checkout</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-3 h-1.5 w-1.5 rounded-full bg-[var(--color-bonita-cocoa)]" />
+              <span>View Profile</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-3 h-1.5 w-1.5 rounded-full bg-[var(--color-bonita-cocoa)]" />
+              <span>Access order history</span>
+            </div>
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-start gap-3">
+              <span className="mt-3 h-1.5 w-1.5 rounded-full bg-[var(--color-bonita-cocoa)]" />
+              <span>View Profile</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-3 h-1.5 w-1.5 rounded-full bg-[var(--color-bonita-cocoa)]" />
+              <span>Receive email communications</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-3 h-1.5 w-1.5 rounded-full bg-[var(--color-bonita-cocoa)]" />
+              <span>View saved addresses &amp; payments</span>
+            </div>
+          </div>
+        </div>
+      }
+      title="Create Your Account"
+    />
   );
 }

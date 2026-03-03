@@ -592,6 +592,26 @@ export async function toggleCategoryStatusAction(categoryId: string, nextIsActiv
     if (productUpdateError) {
       throw new Error(productUpdateError.message);
     }
+  } else {
+    const { error: subcategoryUpdateError } = await supabase
+      .from("subcategories")
+      .update({ is_active: true })
+      .eq("category_id", categoryId)
+      .is("deleted_at", null);
+
+    if (subcategoryUpdateError) {
+      throw new Error(subcategoryUpdateError.message);
+    }
+
+    const { error: productUpdateError } = await supabase
+      .from("products")
+      .update({ status: "published" })
+      .eq("category_id", categoryId)
+      .is("deleted_at", null);
+
+    if (productUpdateError) {
+      throw new Error(productUpdateError.message);
+    }
   }
 
   await clearErrorCookie("structure");
@@ -986,6 +1006,16 @@ export async function toggleSubcategoryStatusAction(
     const { error: productUpdateError } = await supabase
       .from("products")
       .update({ status: "archived" })
+      .eq("subcategory_id", subcategoryId)
+      .is("deleted_at", null);
+
+    if (productUpdateError) {
+      throw new Error(productUpdateError.message);
+    }
+  } else {
+    const { error: productUpdateError } = await supabase
+      .from("products")
+      .update({ status: "published" })
       .eq("subcategory_id", subcategoryId)
       .is("deleted_at", null);
 

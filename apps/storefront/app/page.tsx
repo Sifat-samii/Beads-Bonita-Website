@@ -99,6 +99,24 @@ export default async function Page() {
 
   const heroProduct = featuredProducts[0] ?? null;
   const spotlightProducts = featuredProducts.slice(1, 4);
+  const announcementSlides =
+    featuredProducts.length > 0
+      ? featuredProducts.slice(0, 4).map((product) => ({
+          id: product.id,
+          href: `/product/${product.slug}`,
+          label: product.isLimitedEdition
+            ? `Limited edition: ${product.name}. Discover it now.`
+            : product.isBestSeller
+              ? `Best seller spotlight: ${product.name}. Shop the favorite piece.`
+              : `Featured now: ${product.name}. Explore the product page.`,
+        }))
+      : [
+          {
+            id: "bonita-shop-banner",
+            href: "/shop",
+            label: "Featured now: discover the Bonita collection and shop the latest pieces.",
+          },
+        ];
 
   return (
     <main className="min-h-screen bg-[#f7f3ed] text-[var(--color-bonita-charcoal)]">
@@ -120,15 +138,7 @@ export default async function Page() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_18%),radial-gradient(circle_at_bottom,rgba(0,0,0,0.22),transparent_24%)]" />
         </div>
 
-        <HomeTopChrome brandName={brand.name} items={navItems} slides={featuredProducts.slice(0, 4).map((product) => ({
-          id: product.id,
-          href: `/product/${product.slug}`,
-          label: product.isLimitedEdition
-            ? `Limited edition: ${product.name}. Discover it now.`
-            : product.isBestSeller
-              ? `Best seller spotlight: ${product.name}. Shop the favorite piece.`
-              : `Featured now: ${product.name}. Explore the product page.`,
-        }))} />
+        <HomeTopChrome brandName={brand.name} items={navItems} slides={announcementSlides} />
 
         <div className="relative z-10 flex min-h-screen items-end justify-center px-6 pb-16 pt-40 sm:px-10 sm:pb-20 lg:px-16 lg:pb-24">
           <div className="w-full max-w-[920px] text-center text-white">

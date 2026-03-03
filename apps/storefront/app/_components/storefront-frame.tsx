@@ -33,7 +33,7 @@ export function StorefrontFrame({
 
   return (
     <main className="page-shell min-h-screen">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-6 md:px-10">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-8 px-6 py-6 md:px-10">
         <header className="sticky top-4 z-20">
           <Surface className="border-white/50 bg-white/65 px-5 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -102,3 +102,5 @@ export function StorefrontFrame({
     </main>
   );
 }
+
+

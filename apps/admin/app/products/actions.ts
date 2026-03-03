@@ -460,6 +460,8 @@ export async function createCategoryAction(formData: FormData) {
   await clearErrorCookie("category");
   await setSuccessCookie("category");
   revalidatePath("/products");
+  revalidatePath("/");
+  revalidatePath("/shop");
 }
 
 export async function deleteCategoryAction(categoryId: string) {
@@ -539,6 +541,8 @@ export async function deleteCategoryAction(categoryId: string) {
 
   await clearErrorCookie("structure");
   revalidatePath("/products");
+  revalidatePath("/");
+  revalidatePath("/shop");
 }
 
 export async function toggleCategoryStatusAction(categoryId: string, nextIsActive: boolean) {
@@ -568,28 +572,32 @@ export async function toggleCategoryStatusAction(categoryId: string, nextIsActiv
     throw new Error(categoryUpdateError.message);
   }
 
-  const { error: subcategoryUpdateError } = await supabase
-    .from("subcategories")
-    .update({ is_active: nextIsActive })
-    .eq("category_id", categoryId)
-    .is("deleted_at", null);
+  if (!nextIsActive) {
+    const { error: subcategoryUpdateError } = await supabase
+      .from("subcategories")
+      .update({ is_active: false })
+      .eq("category_id", categoryId)
+      .is("deleted_at", null);
 
-  if (subcategoryUpdateError) {
-    throw new Error(subcategoryUpdateError.message);
-  }
+    if (subcategoryUpdateError) {
+      throw new Error(subcategoryUpdateError.message);
+    }
 
-  const { error: productUpdateError } = await supabase
-    .from("products")
-    .update({ status: nextIsActive ? "published" : "archived" })
-    .eq("category_id", categoryId)
-    .is("deleted_at", null);
+    const { error: productUpdateError } = await supabase
+      .from("products")
+      .update({ status: "archived" })
+      .eq("category_id", categoryId)
+      .is("deleted_at", null);
 
-  if (productUpdateError) {
-    throw new Error(productUpdateError.message);
+    if (productUpdateError) {
+      throw new Error(productUpdateError.message);
+    }
   }
 
   await clearErrorCookie("structure");
   revalidatePath("/products");
+  revalidatePath("/");
+  revalidatePath("/shop");
 }
 
 export async function createProductAction(formData: FormData) {
@@ -698,6 +706,7 @@ export async function createProductAction(formData: FormData) {
   await clearErrorCookie("product");
   await setSuccessCookie("product");
   revalidatePath("/products");
+  revalidatePath("/");
   revalidatePath("/shop");
 }
 
@@ -847,6 +856,8 @@ export async function createSubcategoryAction(formData: FormData) {
   await clearErrorCookie("subcategory");
   await setSuccessCookie("subcategory");
   revalidatePath("/products");
+  revalidatePath("/");
+  revalidatePath("/shop");
 }
 
 export async function deleteSubcategoryAction(subcategoryId: string) {
@@ -917,6 +928,8 @@ export async function deleteSubcategoryAction(subcategoryId: string) {
 
   await clearErrorCookie("structure");
   revalidatePath("/products");
+  revalidatePath("/");
+  revalidatePath("/shop");
 }
 
 export async function toggleSubcategoryStatusAction(
@@ -969,18 +982,22 @@ export async function toggleSubcategoryStatusAction(
     throw new Error(subcategoryUpdateError.message);
   }
 
-  const { error: productUpdateError } = await supabase
-    .from("products")
-    .update({ status: nextIsActive ? "published" : "archived" })
-    .eq("subcategory_id", subcategoryId)
-    .is("deleted_at", null);
+  if (!nextIsActive) {
+    const { error: productUpdateError } = await supabase
+      .from("products")
+      .update({ status: "archived" })
+      .eq("subcategory_id", subcategoryId)
+      .is("deleted_at", null);
 
-  if (productUpdateError) {
-    throw new Error(productUpdateError.message);
+    if (productUpdateError) {
+      throw new Error(productUpdateError.message);
+    }
   }
 
   await clearErrorCookie("structure");
   revalidatePath("/products");
+  revalidatePath("/");
+  revalidatePath("/shop");
 }
 
 export async function updateProductAction(productId: string, formData: FormData) {
@@ -1107,6 +1124,7 @@ export async function updateProductAction(productId: string, formData: FormData)
 
   revalidatePath("/products");
   revalidatePath(`/products/${productId}`);
+  revalidatePath("/");
   revalidatePath("/shop");
   revalidatePath(`/product/${data.slug}`);
   redirect("/products");
@@ -1177,6 +1195,7 @@ export async function deleteProductAction(productId: string) {
   }
 
   revalidatePath("/products");
+  revalidatePath("/");
   revalidatePath("/shop");
   revalidatePath(`/product/${productData.slug}`);
   redirect("/products");
@@ -1223,6 +1242,7 @@ export async function deleteProductImageAction(
 
   revalidatePath("/products");
   revalidatePath(`/products/${productId}`);
+  revalidatePath("/");
   revalidatePath("/shop");
   redirect(`/products/${productId}`);
 }
@@ -1278,4 +1298,6 @@ export async function adjustInventoryAction(formData: FormData) {
   revalidatePath("/inventory");
   revalidatePath("/products");
   revalidatePath(`/products/${productId}`);
+  revalidatePath("/");
+  revalidatePath("/shop");
 }

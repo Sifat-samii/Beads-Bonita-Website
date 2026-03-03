@@ -53,12 +53,12 @@ export default async function ProductDetailPage({
         .maybeSingle(),
       supabase
         .from("categories")
-        .select("id, name")
+        .select("id, name, is_active")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true }),
       supabase
         .from("subcategories")
-        .select("id, category_id, name")
+        .select("id, category_id, name, is_active")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true }),
       supabase
@@ -89,6 +89,23 @@ export default async function ProductDetailPage({
   const updateAction = updateProductAction.bind(null, productId);
   const deleteAction = deleteProductAction.bind(null, productId);
   const deleteImageAction = deleteProductImageAction.bind(null, productId);
+  const categoryStateMap = new Map(
+    categories?.map((category: { id: string; is_active: boolean }) => [
+      category.id,
+      category.is_active,
+    ]) ?? [],
+  );
+  const selectedCategoryIsActive = categoryStateMap.get(product.category_id) ?? false;
+  const selectedSubcategory = subcategories?.find(
+    (subcategory: { id: string }) => subcategory.id === product.subcategory_id,
+  );
+  const productVisibilityMessage = !selectedCategoryIsActive
+    ? "This product is hidden on the storefront because its category is archived."
+    : selectedSubcategory && !selectedSubcategory.is_active
+      ? "This product is hidden on the storefront because its subcategory is archived."
+      : product.status === "archived"
+        ? "This product is hidden on the storefront because the product itself is archived."
+        : null;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-8 md:px-8">
@@ -110,6 +127,11 @@ export default async function ProductDetailPage({
               Back to products
             </Link>
           </div>
+          {productVisibilityMessage ? (
+            <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {productVisibilityMessage}
+            </div>
+          ) : null}
         </Surface>
 
         <Surface className="border-white/10 bg-white/8 p-6 text-white shadow-none">
@@ -118,10 +140,15 @@ export default async function ProductDetailPage({
             buttonLabel="Save changes"
             cancelHref="/products"
             categories={
-              categories?.map((category: { id: string; name: string }) => ({
-                id: category.id,
-                name: category.name,
-              })) ?? []
+              categories?.map(
+                (category: { id: string; name: string; is_active: boolean }) => ({
+                  id: category.id,
+                  name: category.name,
+                  label: category.is_active
+                    ? category.name
+                    : `${category.name} (Archived)`,
+                }),
+              ) ?? []
             }
             defaultValues={{
               name: product.name,
@@ -161,11 +188,27 @@ export default async function ProductDetailPage({
             productId={productId}
             storageKey={`bb-admin-product-edit-form-${productId}`}
             subcategories={
-              subcategories?.map((subcategory: { id: string; category_id: string; name: string }) => ({
-                id: subcategory.id,
-                categoryId: subcategory.category_id,
-                name: subcategory.name,
-              })) ?? []
+              subcategories?.map(
+                (subcategory: {
+                  id: string;
+                  category_id: string;
+                  name: string;
+                  is_active: boolean;
+                }) => ({
+                  id: subcategory.id,
+                  categoryId: subcategory.category_id,
+                  name: subcategory.name,
+                  label: `${
+                    subcategory.name
+                  }${
+                    !(categoryStateMap.get(subcategory.category_id) ?? false)
+                      ? " (Hidden by archived category)"
+                      : !subcategory.is_active
+                        ? " (Archived)"
+                        : ""
+                  }`,
+                }),
+              ) ?? []
             }
           />
         </Surface>

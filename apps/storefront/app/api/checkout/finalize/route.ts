@@ -30,6 +30,8 @@ type PaymentAttemptRow = {
 
 type ProductCheckoutRow = {
   id: string;
+  category_id: string;
+  subcategory_id: string | null;
   name: string;
   slug: string;
   status: string;
@@ -42,6 +44,16 @@ type ProductCheckoutRow = {
 type InventoryCheckoutRow = {
   product_id: string | null;
   quantity: number;
+};
+
+type CategoryCheckoutRow = {
+  id: string;
+  is_active: boolean;
+};
+
+type SubcategoryCheckoutRow = {
+  id: string;
+  is_active: boolean;
 };
 
 export async function POST(request: Request) {
@@ -94,11 +106,16 @@ export async function POST(request: Request) {
   }
 
   const productIds = [...normalizedItems.keys()];
-  const [{ data: products, error: productsError }, { data: inventoryRows, error: inventoryError }] =
+  const [
+    { data: products, error: productsError },
+    { data: inventoryRows, error: inventoryError },
+  ] =
     (await Promise.all([
       supabase
         .from("products")
-        .select("id, name, slug, status, deleted_at, price, product_type, lead_time_days")
+        .select(
+          "id, category_id, subcategory_id, name, slug, status, deleted_at, price, product_type, lead_time_days",
+        )
         .in("id", productIds),
       supabase
         .from("inventory_stock")
@@ -119,6 +136,41 @@ export async function POST(request: Request) {
   }
 
   const productMap = new Map(products?.map((product) => [product.id, product]) ?? []);
+  const categoryIds = [...new Set((products ?? []).map((product) => product.category_id))];
+  const subcategoryIds = [
+    ...new Set(
+      (products ?? [])
+        .map((product) => product.subcategory_id)
+        .filter((subcategoryId): subcategoryId is string => Boolean(subcategoryId)),
+    ),
+  ];
+  const [
+    { data: categoryRows, error: categoriesError },
+    { data: subcategoryRows, error: subcategoriesError },
+  ] = (await Promise.all([
+    supabase.from("categories").select("id, is_active").in("id", categoryIds),
+    subcategoryIds.length
+      ? supabase.from("subcategories").select("id, is_active").in("id", subcategoryIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])) as [
+    { data: CategoryCheckoutRow[] | null; error: { message: string } | null },
+    { data: SubcategoryCheckoutRow[] | null; error: { message: string } | null },
+  ];
+
+  if (categoriesError) {
+    return NextResponse.json({ error: categoriesError.message }, { status: 500 });
+  }
+
+  if (subcategoriesError) {
+    return NextResponse.json({ error: subcategoriesError.message }, { status: 500 });
+  }
+
+  const categoryStateMap = new Map(
+    categoryRows?.map((category) => [category.id, category.is_active]) ?? [],
+  );
+  const subcategoryStateMap = new Map(
+    subcategoryRows?.map((subcategory) => [subcategory.id, subcategory.is_active]) ?? [],
+  );
   const inventoryMap = new Map(
     inventoryRows
       ?.filter((row) => row.product_id)
@@ -130,7 +182,13 @@ export async function POST(request: Request) {
   for (const item of normalizedItems.values()) {
     const product = productMap.get(item.productId);
 
-    if (!product || product.deleted_at || product.status !== "published") {
+    if (
+      !product ||
+      product.deleted_at ||
+      product.status !== "published" ||
+      !categoryStateMap.get(product.category_id) ||
+      (product.subcategory_id && !subcategoryStateMap.get(product.subcategory_id))
+    ) {
       return NextResponse.json(
         {
           error:

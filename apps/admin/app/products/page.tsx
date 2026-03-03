@@ -91,8 +91,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     .not("product_id", "is", null);
 
   const categoryMap = new Map(categories?.map((category) => [category.id, category.name]) ?? []);
+  const categoryStateMap = new Map(
+    categories?.map((category) => [category.id, category.is_active]) ?? [],
+  );
   const subcategoryMap = new Map(
     subcategories?.map((subcategory) => [subcategory.id, subcategory.name]) ?? [],
+  );
+  const subcategoryStateMap = new Map(
+    subcategories?.map((subcategory) => [subcategory.id, subcategory.is_active]) ?? [],
   );
   const inventoryMap = new Map(inventoryRows?.map((row) => [row.product_id ?? "", row]) ?? []);
   const categoryProductCounts = new Map<string, number>();
@@ -124,6 +130,51 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     const scopedSubcategories = subcategoriesByCategory.get(subcategory.category_id) ?? [];
     scopedSubcategories.push(subcategory);
     subcategoriesByCategory.set(subcategory.category_id, scopedSubcategories);
+  }
+
+  function getProductVisibility(product: {
+    status: string;
+    category_id: string;
+    subcategory_id: string | null;
+  }) {
+    const categoryIsActive = categoryStateMap.get(product.category_id) ?? false;
+
+    if (!categoryIsActive) {
+      return {
+        tone: "bg-amber-500/15 text-amber-200 border-amber-400/20",
+        label: "Hidden by archived category",
+      };
+    }
+
+    if (product.subcategory_id) {
+      const subcategoryIsActive = subcategoryStateMap.get(product.subcategory_id) ?? false;
+
+      if (!subcategoryIsActive) {
+        return {
+          tone: "bg-orange-500/15 text-orange-200 border-orange-400/20",
+          label: "Hidden by archived subcategory",
+        };
+      }
+    }
+
+    if (product.status === "archived") {
+      return {
+        tone: "bg-white/10 text-white/65 border-white/10",
+        label: "Archived product",
+      };
+    }
+
+    if (product.status === "draft") {
+      return {
+        tone: "bg-sky-500/15 text-sky-200 border-sky-400/20",
+        label: "Draft",
+      };
+    }
+
+    return {
+      tone: "bg-emerald-500/15 text-emerald-200 border-emerald-400/20",
+      label: "Live on storefront",
+    };
   }
 
   return (
@@ -207,6 +258,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                         name: subcategory.name,
                         sortOrder: subcategory.sort_order,
                         isActive: subcategory.is_active,
+                        isHiddenByParent: !category.is_active,
                         productCount: subcategoryProductCounts.get(subcategory.id) ?? 0,
                       })),
                   })) ?? []
@@ -227,11 +279,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               action={createProductAction}
               buttonLabel="Create product"
               categories={
-                categories?.map((category) => ({
-                  id: category.id,
-                  name: category.name,
-                })) ?? []
-              }
+              categories?.map((category) => ({
+                id: category.id,
+                name: category.name,
+                label: category.is_active
+                  ? category.name
+                  : `${category.name} (Archived)`,
+              })) ?? []
+            }
               defaultValues={{
                 name: "",
                 slug: "",
@@ -259,13 +314,22 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               storageKey="bb-admin-product-create-form"
               existingImages={[]}
               subcategories={
-                subcategories?.map((subcategory) => ({
-                  id: subcategory.id,
-                  categoryId: subcategory.category_id,
-                  name: subcategory.name,
-                })) ?? []
-              }
-            />
+              subcategories?.map((subcategory) => ({
+                id: subcategory.id,
+                categoryId: subcategory.category_id,
+                name: subcategory.name,
+                label: `${
+                  subcategory.name
+                }${
+                  !(categoryStateMap.get(subcategory.category_id) ?? false)
+                    ? " (Hidden by archived category)"
+                    : !subcategory.is_active
+                      ? " (Archived)"
+                      : ""
+                }`,
+              })) ?? []
+            }
+          />
 
             <div className="mt-8 space-y-3">
               <div className="flex items-center justify-between gap-3">
@@ -282,6 +346,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               {products?.length ? (
                 products.map((product) => {
                   const inventory = inventoryMap.get(product.id);
+                  const visibility = getProductVisibility(product);
 
                   return (
                     <div
@@ -301,7 +366,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                         </div>
                         <div className="text-right">
                           <p className="font-medium">BDT {product.price}</p>
-                          <p className="mt-1 capitalize text-white/55">{product.status}</p>
+                          <p className="mt-2">
+                            <span
+                              className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] ${visibility.tone}`}
+                            >
+                              {visibility.label}
+                            </span>
+                          </p>
                         </div>
                       </div>
                       <div className="mt-4 flex items-center justify-between gap-3 text-white/65">

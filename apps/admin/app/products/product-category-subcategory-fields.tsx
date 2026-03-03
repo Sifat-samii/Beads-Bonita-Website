@@ -5,12 +5,14 @@ import { useEffect, useId, useMemo } from "react";
 type CategoryOption = {
   id: string;
   name: string;
+  label?: string;
 };
 
 type SubcategoryOption = {
   id: string;
   categoryId: string;
   name: string;
+  label?: string;
 };
 
 type ProductCategorySubcategoryFieldsProps = {
@@ -79,7 +81,7 @@ export function ProductCategorySubcategoryFields({
           <option value="">Select category</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {category.label ?? category.name}
             </option>
           ))}
         </select>
@@ -101,7 +103,7 @@ export function ProductCategorySubcategoryFields({
           </option>
           {filteredSubcategories.map((subcategory) => (
             <option key={subcategory.id} value={subcategory.id}>
-              {subcategory.name}
+              {subcategory.label ?? subcategory.name}
             </option>
           ))}
         </select>

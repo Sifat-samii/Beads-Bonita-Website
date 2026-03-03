@@ -16,6 +16,7 @@ type CategoryNode = {
     name: string;
     sortOrder: number;
     isActive: boolean;
+    isHiddenByParent: boolean;
     productCount: number;
   }[];
 };
@@ -113,7 +114,13 @@ export function CategoryStructureTree({
                             {subcategory.name}
                           </p>
                           <p className="truncate text-xs text-white/55">
-                            {`Order ${subcategory.sortOrder}${subcategory.isActive ? "" : " | Archived"} | ${subcategory.productCount} products`}
+                            {`Order ${subcategory.sortOrder}${
+                              subcategory.isActive ? "" : " | Archived"
+                            }${
+                              subcategory.isHiddenByParent
+                                ? " | Hidden by archived category"
+                                : ""
+                            } | ${subcategory.productCount} products`}
                           </p>
                         </div>
                         <SubcategoryOptionsMenu

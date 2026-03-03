@@ -122,6 +122,8 @@ export const getPublishedCategories = cache(async (): Promise<StoreCategory[]> =
   const { data, error } = await supabase
     .from("categories")
     .select("id, name, slug, sort_order")
+    .is("deleted_at", null)
+    .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -141,6 +143,8 @@ export const getPublishedSubcategories = cache(async (): Promise<StoreSubcategor
   const { data, error } = await supabase
     .from("subcategories")
     .select("id, category_id, name, slug, sort_order")
+    .is("deleted_at", null)
+    .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -167,7 +171,9 @@ export async function getPublishedProducts(input?: {
     .from("products")
     .select(
       "id, category_id, subcategory_id, name, slug, short_description, price, compare_at_price, product_type, lead_time_days, is_featured, is_best_seller, is_limited_edition, created_at",
-    );
+    )
+    .is("deleted_at", null)
+    .eq("status", "published");
 
   if (input?.categoryId) {
     query = query.eq("category_id", input.categoryId);
@@ -251,6 +257,8 @@ export const getPublishedProductBySlug = cache(
       .select(
         "id, category_id, subcategory_id, name, slug, short_description, description, story, sustainability_info, care_instructions, sku, price, compare_at_price, product_type, lead_time_days, is_featured, is_best_seller, is_limited_edition",
       )
+      .is("deleted_at", null)
+      .eq("status", "published")
       .eq("slug", slug)
       .maybeSingle();
 

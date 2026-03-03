@@ -98,7 +98,7 @@ export default async function AccountPage() {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <StorefrontFrame currentPath="/account">
+    <StorefrontFrame contentClassName="flex w-full flex-col gap-8" currentPath="/account">
       <div className="pb-6 pt-2">
         <Surface className="overflow-hidden border-white/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(241,232,220,0.84))] p-0 shadow-[0_24px_70px_rgba(65,48,33,0.08)]">
           <div className="grid lg:grid-cols-[220px_minmax(0,1fr)]">

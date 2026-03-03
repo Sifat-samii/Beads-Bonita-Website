@@ -1,21 +1,20 @@
-import { SectionHeading } from "@beads-bonita/ui/section-heading";
 import { StorefrontFrame } from "../_components/storefront-frame";
+import { StorefrontPageHero } from "../_components/storefront-page-hero";
 import { CheckoutPageClient } from "./checkout-page-client";
 
 export default function CheckoutPage() {
   return (
     <StorefrontFrame currentPath="/cart">
-      <section className="pt-4">
-        <SectionHeading
-          eyebrow="Checkout"
-          title="Prepare address, payment method, and order intent before payment."
-          description="This keeps the flow aligned with the master plan: validate on the server first, then connect payment initiation and real order creation in the next slice."
-        />
-      </section>
+      <StorefrontPageHero
+        accent="Address capture, payment selection, and order intent creation now sit in one cleaner interface."
+        description="Checkout validates the order server-side before payment, keeping price, stock, and archived-product rules consistent with the live storefront."
+        eyebrow="Checkout"
+        primaryCta={{ href: "/cart", label: "Review cart" }}
+        secondaryCta={{ href: "/shop", label: "Return to catalog" }}
+        title="Prepare shipping and payment before confirmation."
+      />
 
-      <section className="pb-8">
-        <CheckoutPageClient />
-      </section>
+      <CheckoutPageClient />
     </StorefrontFrame>
   );
 }

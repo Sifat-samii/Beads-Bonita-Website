@@ -1,21 +1,20 @@
-import { SectionHeading } from "@beads-bonita/ui/section-heading";
 import { StorefrontFrame } from "../_components/storefront-frame";
+import { StorefrontPageHero } from "../_components/storefront-page-hero";
 import { CartPageClient } from "./cart-page-client";
 
 export default function CartPage() {
   return (
     <StorefrontFrame currentPath="/cart">
-      <section className="pt-4">
-        <SectionHeading
-          eyebrow="Cart"
-          title="A calm review step before checkout, shipping, and payment."
-          description="Keep the cart lightweight and clear now, then connect it directly into checkout and SSLCOMMERZ in the next commerce slice."
-        />
-      </section>
+      <StorefrontPageHero
+        accent="Review quantities, remove items, and move directly into the validated checkout flow."
+        description="The cart now acts as the final review layer before address capture, payment selection, and server-side order validation."
+        eyebrow="Cart"
+        primaryCta={{ href: "/checkout", label: "Go to checkout" }}
+        secondaryCta={{ href: "/shop", label: "Keep shopping" }}
+        title="A clear review step before payment."
+      />
 
-      <section className="pb-8">
-        <CartPageClient />
-      </section>
+      <CartPageClient />
     </StorefrontFrame>
   );
 }

@@ -3,120 +3,26 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { brand } from "@beads-bonita/core";
 import { Button } from "@beads-bonita/ui/button";
-import { type HomeNavItem } from "./_components/home-mega-nav";
+import { BestSellersShowcase } from "./_components/best-sellers-showcase";
+import { FeaturedProductsSpotlight } from "./_components/featured-products-spotlight";
+import { StorefrontFooter } from "./_components/storefront-footer";
 import { HomeTopChrome } from "./_components/home-top-chrome";
-import { getCatalogContext, getPublishedProducts } from "./_lib/catalog";
-
-function formatCategoryLabel(name: string) {
-  return name.replace(/\s+/g, " ").trim();
-}
-
-function formatPrice(price: number) {
-  return `$${price.toFixed(2)}`;
-}
+import { getPublishedProducts } from "./_lib/catalog";
+import { getHomeChromeData } from "./_lib/home-chrome";
 
 export default async function Page() {
-  const [{ categories, subcategoriesByCategory }, featuredProducts] = await Promise.all([
-    getCatalogContext(),
-    getPublishedProducts({ sort: "featured", limit: 6 }),
+  const [{ categories, featuredProducts, navItems }, bestSellerCandidates] = await Promise.all([
+    getHomeChromeData(),
+    getPublishedProducts({ sort: "featured", limit: 16 }),
   ]);
-
-  const navCategories = categories;
-
-  const navItems: HomeNavItem[] = await Promise.all(
-    navCategories.map(async (category) => {
-      const subcategories = subcategoriesByCategory.get(category.id) ?? [];
-      const categoryProducts = await getPublishedProducts({
-        categoryId: category.id,
-        sort: "featured",
-        limit: 8,
-      });
-
-      const highlightProduct =
-        categoryProducts.find((product) => product.isBestSeller) ??
-        categoryProducts.find((product) => product.isLimitedEdition) ??
-        categoryProducts[0] ??
-        null;
-
-      const subcategoryEntries = await Promise.all(
-        (subcategories.length
-          ? subcategories
-          : [
-              {
-                id: `${category.id}-all`,
-                slug: category.slug,
-                name: `All ${category.name}`,
-              },
-            ]
-        ).map(async (subcategory) => {
-          const products = subcategories.length
-            ? await getPublishedProducts({
-                subcategoryId: subcategory.id,
-                sort: "featured",
-                limit: 4,
-              })
-            : categoryProducts.slice(0, 4);
-
-          return {
-            label: subcategory.name,
-            href: subcategories.length
-              ? `/subcategory/${subcategory.slug}`
-              : `/category/${category.slug}`,
-            products: products.map((product) => ({
-              id: product.id,
-              name: product.name,
-              href: `/product/${product.slug}`,
-              imageUrl: product.primaryImageUrl,
-              price: formatPrice(product.price),
-            })),
-          };
-        }),
-      );
-
-      return {
-        label: formatCategoryLabel(category.name),
-        href: `/category/${category.slug}`,
-        description: `Explore ${category.name.toLowerCase()} through handcrafted pieces, live inventory, and an editorial browsing flow.`,
-        subcategories: subcategoryEntries.filter((entry) => entry.products.length > 0),
-        highlight: {
-          title: highlightProduct?.name ?? `${category.name} spotlight`,
-          body:
-            highlightProduct?.shortDescription ??
-            `A curated Bonita entry point into ${category.name.toLowerCase()}, built to feel collected, layered, and giftable.`,
-          href: highlightProduct
-            ? `/product/${highlightProduct.slug}`
-            : `/category/${category.slug}`,
-          imageUrl: highlightProduct?.primaryImageUrl ?? null,
-          badge: highlightProduct?.isBestSeller
-            ? "Best seller"
-            : highlightProduct?.isLimitedEdition
-              ? "Limited edition"
-              : "Category highlight",
-        },
-      };
-    }),
-  );
 
   const heroProduct = featuredProducts[0] ?? null;
   const spotlightProducts = featuredProducts.slice(1, 4);
-  const announcementSlides =
-    featuredProducts.length > 0
-      ? featuredProducts.slice(0, 4).map((product) => ({
-          id: product.id,
-          href: `/product/${product.slug}`,
-          label: product.isLimitedEdition
-            ? `Limited edition: ${product.name}. Discover it now.`
-            : product.isBestSeller
-              ? `Best seller spotlight: ${product.name}. Shop the favorite piece.`
-              : `Featured now: ${product.name}. Explore the product page.`,
-        }))
-      : [
-          {
-            id: "bonita-shop-banner",
-            href: "/shop",
-            label: "Featured now: discover the Bonita collection and shop the latest pieces.",
-          },
-        ];
+  const bestSellerProducts = (
+    bestSellerCandidates.filter((product) => product.isBestSeller).length
+      ? bestSellerCandidates.filter((product) => product.isBestSeller)
+      : bestSellerCandidates
+  ).slice(0, 8);
 
   return (
     <main className="min-h-screen bg-[#f7f3ed] text-[var(--color-bonita-charcoal)]">
@@ -138,7 +44,25 @@ export default async function Page() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_18%),radial-gradient(circle_at_bottom,rgba(0,0,0,0.22),transparent_24%)]" />
         </div>
 
-        <HomeTopChrome brandName={brand.name} items={navItems} slides={announcementSlides} />
+        <HomeTopChrome brandName={brand.name} items={navItems} slides={
+          featuredProducts.length > 0
+            ? featuredProducts.slice(0, 4).map((product) => ({
+                id: product.id,
+                href: `/product/${product.slug}`,
+                label: product.isLimitedEdition
+                  ? `Limited edition: ${product.name}. Discover it now.`
+                  : product.isBestSeller
+                    ? `Best seller spotlight: ${product.name}. Shop the favorite piece.`
+                    : `Featured now: ${product.name}. Explore the product page.`,
+              }))
+            : [
+                {
+                  id: "bonita-shop-banner",
+                  href: "/shop",
+                  label: "Featured now: discover the Bonita collection and shop the latest pieces.",
+                },
+              ]
+        } />
 
         <div className="relative z-10 flex min-h-screen items-end justify-center px-6 pb-16 pt-40 sm:px-10 sm:pb-20 lg:px-16 lg:pb-24">
           <div className="w-full max-w-[920px] text-center text-white">
@@ -301,6 +225,10 @@ export default async function Page() {
         </div>
       </section>
 
+      <FeaturedProductsSpotlight products={featuredProducts} />
+
+      <BestSellersShowcase products={bestSellerProducts} />
+
       <section className="px-6 pb-20 pt-6 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-[1540px]">
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -328,6 +256,8 @@ export default async function Page() {
           </div>
         </div>
       </section>
+
+      <StorefrontFooter />
     </main>
   );
 }

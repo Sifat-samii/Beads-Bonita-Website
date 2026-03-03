@@ -42,23 +42,23 @@ export default async function CheckoutResultPage({
 
   return (
     <StorefrontFrame currentPath="/cart">
-      <section className="py-8">
-        <Surface className="mx-auto max-w-3xl border-white/40 bg-white/65 p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-moss)]">
+      <section className="mx-auto w-full max-w-4xl">
+        <Surface className="rounded-[2.25rem] border-white/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.86),rgba(237,244,240,0.74)_42%,rgba(244,236,225,0.88)_100%)] p-10 text-center shadow-[0_24px_70px_rgba(34,27,20,0.08)] sm:p-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-bonita-moss)]">
             Checkout result
           </p>
-          <h1 className="mt-4 font-[family-name:var(--font-display)] text-5xl text-[var(--color-bonita-charcoal)]">
+          <h1 className="mt-5 font-[family-name:var(--font-display)] text-5xl tracking-[-0.04em] text-[var(--color-bonita-charcoal)] sm:text-[4.4rem]">
             {content.title}
           </h1>
-          <p className="mt-5 text-sm leading-7 text-[color-mix(in_srgb,var(--color-bonita-charcoal)_72%,white)]">
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-[color-mix(in_srgb,var(--color-bonita-charcoal)_72%,white)]">
             {params?.message ?? content.body}
           </p>
           {params?.order ? (
-            <p className="mt-4 text-sm text-[color-mix(in_srgb,var(--color-bonita-charcoal)_70%,white)]">
+            <p className="mt-5 text-sm font-medium text-[var(--color-bonita-cocoa)]">
               Order ID: {params.order}
             </p>
           ) : null}
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/shop">
               <Button>Continue shopping</Button>
             </Link>

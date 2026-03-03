@@ -1,106 +1,42 @@
-import Link from "next/link";
-import { brand, storefrontNavigation } from "@beads-bonita/core";
-import { Button } from "@beads-bonita/ui/button";
-import { Surface } from "@beads-bonita/ui/surface";
-import { CartLink } from "./cart-link";
+import { brand } from "@beads-bonita/core";
+import { HomeTopChrome } from "./home-top-chrome";
+import { StorefrontFooter } from "./storefront-footer";
+import { getHomeChromeData } from "../_lib/home-chrome";
 
-type NavItem = {
-  label: string;
-  href: string;
-};
-
-function isActiveLink(href: string, currentPath: string) {
-  if (href === "/") {
-    return currentPath === "/";
-  }
-
-  return currentPath === href || currentPath.startsWith(`${href}/`);
-}
-
-export function StorefrontFrame({
+export async function StorefrontFrame({
   children,
-  currentPath,
+  contentClassName,
+  currentPath: _currentPath,
 }: {
   children: React.ReactNode;
+  contentClassName?: string;
   currentPath: string;
 }) {
-  const navItems: NavItem[] = [
-    { label: "Home", href: "/" },
-    ...storefrontNavigation.filter((item) =>
-      ["/shop", "/custom-orders", "/sustainability", "/testimonials"].includes(item.href),
-    ),
-  ];
+  const { navItems, announcementSlides } = await getHomeChromeData();
 
   return (
-    <main className="page-shell min-h-screen">
-      <div className="mx-auto flex w-full max-w-none flex-col gap-8 px-6 py-6 md:px-10">
-        <header className="sticky top-4 z-20">
-          <Surface className="border-white/50 bg-white/65 px-5 py-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <Link href="/">
-                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--color-bonita-moss)]">
-                    {brand.name}
-                  </p>
-                  <p className="mt-1 text-sm text-[color-mix(in_srgb,var(--color-bonita-charcoal)_70%,white)]">
-                    {brand.tagline}
-                  </p>
-                </Link>
-              </div>
-              <nav className="flex flex-wrap items-center gap-2 text-sm">
-                {navItems.map((item) => (
-                  <Link
-                    className={`rounded-full px-4 py-2 transition ${
-                      isActiveLink(item.href, currentPath)
-                        ? "bg-[var(--color-bonita-charcoal)] text-[var(--color-bonita-ivory)]"
-                        : "text-[var(--color-bonita-charcoal)] hover:bg-white/55"
-                    }`}
-                    href={item.href}
-                    key={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-              <div className="flex items-center gap-3">
-                <CartLink />
-                <Link href="/account">
-                  <Button className="!px-4 !py-2" variant="secondary">
-                    Account
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </Surface>
-        </header>
+    <main className="min-h-screen bg-[#f7f3ed] text-[var(--color-bonita-charcoal)]">
+      <div className="relative overflow-hidden bg-[linear-gradient(180deg,#edf4f0_0%,#f7f3ed_25%,#f7f3ed_100%)]">
+        <div className="absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_top_left,rgba(157,203,193,0.22),transparent_36%),radial-gradient(circle_at_top_right,rgba(211,180,167,0.16),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.6),transparent_62%)]" />
+        <HomeTopChrome
+          brandName={brand.name}
+          items={navItems}
+          slides={announcementSlides}
+        />
 
-        {children}
-
-        <footer className="pb-10">
-          <Surface className="border-white/40 bg-white/60 p-8">
-            <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-bonita-moss)]">
-                  {brand.name}
-                </p>
-                <p className="mt-4 max-w-2xl font-[family-name:var(--font-display)] text-3xl leading-tight text-[var(--color-bonita-charcoal)]">
-                  Calm handmade jewelry with story, intention, and everyday warmth.
-                </p>
-              </div>
-              <div className="grid gap-2 text-sm text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-                <Link href="/shop">Shop all products</Link>
-                <Link href="/custom-orders">Custom orders</Link>
-                <Link href="/sustainability">Sustainability story</Link>
-                <Link href="/testimonials">Customer testimonials</Link>
-                <Link href="/cart">Cart</Link>
-                <Link href="/account">Account</Link>
-              </div>
-            </div>
-          </Surface>
-        </footer>
+        <div className="relative z-10 px-6 pb-16 pt-[9.75rem] sm:px-10 lg:px-16 lg:pb-24 lg:pt-[10.75rem]">
+          <div
+            className={
+              contentClassName ??
+              "mx-auto flex w-full max-w-[1540px] flex-col gap-8"
+            }
+          >
+            {children}
+          </div>
+        </div>
       </div>
+
+      <StorefrontFooter />
     </main>
   );
 }
-
-

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Heart,
   MapPin,
@@ -53,7 +53,7 @@ function NavIconButton({
   href?: string;
   onClick?: () => void;
 }) {
-  const classes = `inline-flex h-10 w-10 items-center justify-center rounded-full border transition ${className}`;
+  const classes = `inline-flex h-10 w-10 items-center justify-center rounded-[0.85rem] border transition ${className}`;
 
   if (href) {
     return (
@@ -106,103 +106,146 @@ function ExpansionPanel({
   activeSubcategory,
   activeSubcategoryIndex,
   setActiveSubcategoryIndex,
+  isScrolled,
 }: {
   activeItem: HomeNavItem | null;
   activeSubcategory: HomeNavSubcategory | null;
   activeSubcategoryIndex: number;
   setActiveSubcategoryIndex: (index: number) => void;
+  isScrolled: boolean;
 }) {
   if (!activeItem) {
     return null;
   }
 
+  const inspirationLinks = activeItem.subcategories
+    .filter((_, index) => index !== activeSubcategoryIndex)
+    .slice(0, 4);
+  const visibleProducts = (activeSubcategory?.products ?? []).slice(0, 5);
+
   return (
-    <div className="w-full rounded-none border-x-0 border-black/6 bg-[rgba(250,247,242,0.97)] p-8 text-[var(--color-bonita-charcoal)] shadow-[0_30px_80px_rgba(23,18,12,0.16)] backdrop-blur-xl lg:px-10">
-      <div className="grid gap-8 lg:grid-cols-[0.9fr_1fr_1.4fr]">
-        <div>
-          <p className="text-sm font-medium text-[color-mix(in_srgb,var(--color-bonita-charcoal)_52%,white)]">
-            Subcategories
-          </p>
-          <div className="mt-5 space-y-2">
+    <div
+      className={`w-full overflow-y-auto rounded-none border-x-0 border-white/16 bg-[rgba(250,247,242,0.56)] px-6 pb-6 pt-5 text-[var(--color-bonita-charcoal)] shadow-[0_20px_48px_rgba(23,18,12,0.1)] backdrop-blur-2xl ${
+        isScrolled ? "max-h-[calc(100vh-4.5rem)]" : "max-h-[calc(100vh-8.5rem)]"
+      }`}
+    >
+      <div className="mx-auto max-w-[1120px]">
+        <div className="border-b border-black/8 pb-2.5">
+          <nav className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[12px] font-medium uppercase tracking-[0.1em]">
             {activeItem.subcategories.map((subcategory, index) => (
               <div key={subcategory.href} onMouseEnter={() => setActiveSubcategoryIndex(index)}>
                 <Link
-                  className={`flex items-center justify-between rounded-[1rem] px-4 py-3 text-base transition ${
+                  className={`inline-flex border-b-2 pb-1.5 transition ${
                     activeSubcategoryIndex === index
-                      ? "bg-[rgba(127,143,120,0.14)] text-[var(--color-bonita-charcoal)]"
-                      : "text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] hover:bg-white/70 hover:text-[var(--color-bonita-charcoal)]"
+                      ? "border-[var(--color-bonita-cocoa)] text-[var(--color-bonita-charcoal)]"
+                      : "border-transparent text-[color-mix(in_srgb,var(--color-bonita-charcoal)_70%,white)] hover:text-[var(--color-bonita-charcoal)]"
                   }`}
                   href={subcategory.href}
                 >
-                  <span>{subcategory.label}</span>
-                  <span className="text-xs uppercase tracking-[0.22em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_42%,white)]">
-                    {subcategory.products.length}
-                  </span>
+                  {subcategory.label}
                 </Link>
               </div>
+            ))}
+          </nav>
+        </div>
+
+        <div className="pt-4">
+          <div className="flex flex-wrap items-start justify-center gap-3">
+            {visibleProducts.map((product) => (
+              <Link
+                className="group w-[146px] text-center sm:w-[158px] lg:w-[172px]"
+                href={product.href}
+                key={product.id}
+              >
+                <div className="flex items-center justify-center">
+                  <div className="relative mx-auto aspect-square w-[82%] overflow-hidden bg-[#efe9e3]">
+                    {product.imageUrl ? (
+                      <Image
+                        alt={product.name}
+                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                        fill
+                        sizes="200px"
+                        src={product.imageUrl}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] uppercase tracking-[0.1em] text-[var(--color-bonita-charcoal)]">
+                  {product.name}
+                </p>
+              </Link>
             ))}
           </div>
         </div>
 
-        <div>
-          <p className="text-sm font-medium text-[color-mix(in_srgb,var(--color-bonita-charcoal)_52%,white)]">
-            Highlight
-          </p>
-          <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-white/65 bg-[linear-gradient(180deg,#edf4f0_0%,#dce8e0_40%,#f3eade_100%)]">
-            <div className="relative aspect-[0.95]">
-              {activeItem.highlight.imageUrl ? (
-                <Image
-                  alt={activeItem.highlight.title}
-                  className="object-cover"
-                  fill
-                  sizes="360px"
-                  src={activeItem.highlight.imageUrl}
-                />
-              ) : (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.78),transparent_28%),linear-gradient(135deg,#1f6968_0%,#5dbeb8_42%,#d9f0ea_100%)]" />
-              )}
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(14,22,21,0.04),rgba(14,22,21,0.34))]" />
-              <div className="absolute left-5 top-5 rounded-full bg-white/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--color-bonita-charcoal)]">
-                {activeItem.highlight.badge}
-              </div>
-            </div>
-          </div>
-          <p className="mt-5 text-xl font-semibold text-[var(--color-bonita-charcoal)]">
-            {activeItem.highlight.title}
-          </p>
-          <p className="mt-3 max-w-md text-sm leading-7 text-[color-mix(in_srgb,var(--color-bonita-charcoal)_74%,white)]">
-            {activeItem.highlight.body}
-          </p>
+        <div className="flex justify-center pt-7">
           <Link
-            className="mt-4 inline-flex items-center text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-bonita-charcoal)] transition hover:text-[var(--color-bonita-moss)]"
-            href={activeItem.highlight.href}
+            className="inline-flex border-b border-[var(--color-bonita-charcoal)] pb-1 text-[13px] tracking-[0.02em] text-[var(--color-bonita-charcoal)] transition hover:text-[var(--color-bonita-moss)] hover:border-[var(--color-bonita-moss)]"
+            href={activeSubcategory?.href ?? activeItem.href}
           >
-            View highlight
+            View all
           </Link>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm font-medium text-[color-mix(in_srgb,var(--color-bonita-charcoal)_52%,white)]">
-              {activeSubcategory?.label ?? "Products"}
-            </p>
-            {activeSubcategory ? (
+        <div className="mt-7 border-t border-black/8 pt-6">
+          <p className="text-center text-[14px] font-semibold uppercase tracking-[0.1em] text-[var(--color-bonita-charcoal)]">
+            Customize Your Product
+          </p>
+
+          {inspirationLinks.length ? (
+            <div className="mt-6 grid gap-3 text-center sm:grid-cols-3">
               <Link
-                className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-bonita-moss)] transition hover:text-[var(--color-bonita-charcoal)]"
-                href={activeSubcategory.href}
+                className="text-[12px] uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] transition hover:text-[var(--color-bonita-charcoal)]"
+                href="/custom-orders"
               >
-                Shop subcategory
+                Choose colors and finishes
               </Link>
-            ) : null}
-          </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <Link
+                className="text-[12px] uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] transition hover:text-[var(--color-bonita-charcoal)]"
+                href="/custom-orders"
+              >
+                Request a personalized variation
+              </Link>
+              <Link
+                className="text-[12px] uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] transition hover:text-[var(--color-bonita-charcoal)]"
+                href="/custom-orders"
+              >
+                Start a bespoke order
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-3 text-center sm:grid-cols-3">
+              <Link
+                className="text-[12px] uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] transition hover:text-[var(--color-bonita-charcoal)]"
+                href="/custom-orders"
+              >
+                Choose colors and finishes
+              </Link>
+              <Link
+                className="text-[12px] uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] transition hover:text-[var(--color-bonita-charcoal)]"
+                href="/custom-orders"
+              >
+                Request a personalized variation
+              </Link>
+              <Link
+                className="text-[12px] uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--color-bonita-charcoal)_78%,white)] transition hover:text-[var(--color-bonita-charcoal)]"
+                href="/custom-orders"
+              >
+                Start a bespoke order
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 hidden">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {activeSubcategory?.products.map((product) => (
               <Link
-                className="group overflow-hidden rounded-[1.4rem] border border-white/68 bg-white/78 p-3 transition hover:-translate-y-1 hover:bg-white"
+                className="group overflow-hidden rounded-[1rem] border border-white/68 bg-white/78 p-2.5 transition hover:-translate-y-1 hover:bg-white"
                 href={product.href}
                 key={product.id}
               >
-                <div className="relative aspect-[1.02] overflow-hidden rounded-[1rem] bg-[linear-gradient(135deg,#edf4f0_0%,#dce8e0_40%,#f3eade_100%)]">
+                <div className="relative aspect-[0.56] overflow-hidden rounded-[0.8rem] bg-[linear-gradient(135deg,#edf4f0_0%,#dce8e0_40%,#f3eade_100%)]">
                   {product.imageUrl ? (
                     <Image
                       alt={product.name}
@@ -213,15 +256,15 @@ function ExpansionPanel({
                     />
                   ) : null}
                 </div>
-                <div className="mt-4">
-                  <p className="line-clamp-1 text-base font-semibold text-[var(--color-bonita-charcoal)]">
+                <div className="mt-2.5">
+                  <p className="line-clamp-1 text-[14px] font-semibold text-[var(--color-bonita-charcoal)]">
                     {product.name}
                   </p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-[var(--color-bonita-cocoa)]">
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p className="text-[13px] font-medium text-[var(--color-bonita-cocoa)]">
                       {product.price}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-bonita-moss)]">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-bonita-moss)]">
                       <Star className="size-3" />
                       View
                     </span>
@@ -250,11 +293,16 @@ export function HomeMegaNav({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navHovered, setNavHovered] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const activeIndexRef = useRef<number | null>(null);
 
   const activeItem = useMemo(
     () => (activeIndex == null ? null : items[activeIndex] ?? null),
     [activeIndex, items],
   );
+
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   useEffect(() => {
     setActiveSubcategoryIndex(0);
@@ -263,6 +311,10 @@ export function HomeMegaNav({
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 24);
+      if (activeIndexRef.current != null) {
+        setActiveIndex(null);
+        setNavHovered(false);
+      }
     };
 
     handleScroll();
@@ -306,8 +358,8 @@ export function HomeMegaNav({
         <div
           className={`rounded-none border-x-0 px-5 transition duration-300 sm:px-8 lg:px-10 ${chromeClass} ${shellPaddingClass}`}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="hidden items-center gap-3 sm:flex">
+          <div className="grid grid-cols-[auto_1fr] items-start gap-4 sm:grid-cols-[168px_minmax(0,1fr)_168px]">
+            <div className="hidden items-center gap-3 sm:flex sm:w-[168px]">
               <NavIconButton className={iconClass}>
                 <Search className="size-4" />
               </NavIconButton>
@@ -317,14 +369,14 @@ export function HomeMegaNav({
             </div>
 
             <button
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-full border transition sm:hidden ${iconClass}`}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-[0.85rem] border transition sm:hidden ${iconClass}`}
               onClick={() => setMobileOpen((value) => !value)}
               type="button"
             >
               {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
 
-            <div className="flex-1 px-4 text-center sm:px-8">
+            <div className="min-w-0 px-4 text-center sm:px-8">
               <div className="flex flex-col items-center justify-center">
                 <div className={`overflow-hidden transition-all duration-300 ${brandWrapClass}`}>
                   <Link href="/">
@@ -351,7 +403,7 @@ export function HomeMegaNav({
               </div>
             </div>
 
-            <div className="hidden items-center gap-3 sm:flex">
+            <div className="hidden w-[168px] items-center justify-end gap-3 sm:flex">
               <NavIconButton className={iconClass} href="/account">
                 <User className="size-4" />
               </NavIconButton>
@@ -367,7 +419,7 @@ export function HomeMegaNav({
       </div>
 
       <div
-        className={`hidden px-10 pt-0 transition duration-300 lg:block ${
+        className={`hidden px-5 pt-0 transition duration-300 sm:px-8 lg:block lg:px-10 ${
           activeItem
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-2 opacity-0"
@@ -377,13 +429,14 @@ export function HomeMegaNav({
           activeItem={activeItem}
           activeSubcategory={activeSubcategory}
           activeSubcategoryIndex={activeSubcategoryIndex}
+          isScrolled={isScrolled}
           setActiveSubcategoryIndex={setActiveSubcategoryIndex}
         />
       </div>
 
       {mobileOpen ? (
         <div className="px-4 pt-4 lg:hidden">
-          <div className="rounded-[1.75rem] border border-white/12 bg-[rgba(14,24,23,0.84)] p-5 text-white shadow-[0_20px_50px_rgba(7,10,10,0.22)] backdrop-blur-xl">
+        <div className="rounded-[1rem] border border-white/12 bg-[rgba(14,24,23,0.84)] p-5 text-white shadow-[0_20px_50px_rgba(7,10,10,0.22)] backdrop-blur-xl">
             <div className="space-y-5">
               {items.map((item) => (
                 <div className="border-b border-white/10 pb-4" key={item.label}>

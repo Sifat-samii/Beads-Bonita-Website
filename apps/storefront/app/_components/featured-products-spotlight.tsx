@@ -25,12 +25,16 @@ export function FeaturedProductsSpotlight({
   } = useLoopingCarousel({
     itemCount: products.length,
     visibleCount: 1,
-    autoplayMs: 3000,
+    autoplayMs: 2500,
   });
 
   if (!products.length) {
     return null;
   }
+
+  useEffect(() => {
+    setAutoplayPaused(false);
+  }, [setAutoplayPaused]);
 
   return (
     <section className="bg-[#f7f5f2] px-6 py-16 sm:px-10 lg:px-16 lg:py-22">
@@ -60,11 +64,7 @@ export function FeaturedProductsSpotlight({
             <ChevronRight className="size-4" />
           </button>
 
-          <div
-            className="overflow-hidden"
-            onMouseEnter={() => setAutoplayPaused(true)}
-            onMouseLeave={() => setAutoplayPaused(false)}
-          >
+          <div className="overflow-hidden">
             <div
               className={`flex ${transitionEnabled ? "transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" : ""}`}
               onTransitionEnd={handleTransitionEnd}
@@ -72,17 +72,20 @@ export function FeaturedProductsSpotlight({
             >
               {loopedIndexes.map((productIndex, index) => {
                 const product = products[productIndex]!;
+                const eager = index <= 1;
 
                 return (
                 <div className="w-full shrink-0" key={`${product.id}-${index}`}>
                   <div className="overflow-hidden rounded-none bg-[#f2eee8]">
                     <div className="relative aspect-[1.85] w-full overflow-hidden bg-[linear-gradient(135deg,#d0c1aa_0%,#b69463_26%,#d5c8b2_58%,#6d5227_82%,#e4dcc6_100%)]">
                       {product.primaryImageUrl ? (
-                        <div className="absolute inset-0 flex items-center justify-center px-8 py-8 sm:px-12 sm:py-10">
+                        <div className="absolute inset-0">
                           <Image
                             alt={product.name}
-                            className="h-full w-full object-contain"
+                            className="object-cover"
                             fill
+                            loading={eager ? "eager" : "lazy"}
+                            priority={eager}
                             sizes="(max-width: 1280px) 100vw, 1120px"
                             src={product.primaryImageUrl}
                           />

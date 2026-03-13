@@ -59,6 +59,12 @@ export function BestSellersShowcase({
   return (
     <section className="bg-[#f7f5f2] px-6 py-16 sm:px-10 lg:px-16 lg:py-24">
       <div className="mx-auto max-w-[1720px]">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-bonita-moss)]">
+            Best seller
+          </p>
+        </div>
+
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-[#f7f5f2] sm:w-14 xl:w-16" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] w-8 bg-[#f7f5f2] sm:w-14 xl:w-16" />

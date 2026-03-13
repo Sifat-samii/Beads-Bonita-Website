@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${display.variable} ${body.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
         <CartProvider>{children}</CartProvider>
       </body>
     </html>

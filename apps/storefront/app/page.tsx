@@ -1,10 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Leaf, Recycle, ShieldCheck } from "lucide-react";
 import { brand } from "@beads-bonita/core";
-import { Button } from "@beads-bonita/ui/button";
 import { BestSellersShowcase } from "./_components/best-sellers-showcase";
 import { FeaturedProductsSpotlight } from "./_components/featured-products-spotlight";
+import { HomeHeroMedia } from "./_components/home-hero-media";
 import { ShopByCategoryShowcase } from "./_components/shop-by-category-showcase";
 import { StorefrontFooter } from "./_components/storefront-footer";
 import { HomeTopChrome } from "./_components/home-top-chrome";
@@ -58,22 +57,10 @@ export default async function Page() {
   return (
     <main className="min-h-screen bg-[#f7f3ed] text-[var(--color-bonita-charcoal)]">
       <section className="relative min-h-screen overflow-hidden">
-        <div className="absolute inset-0">
-          {heroProduct?.primaryImageUrl ? (
-            <Image
-              alt={heroProduct.name}
-              className="object-cover"
-              fill
-              priority
-              sizes="100vw"
-              src={heroProduct.primaryImageUrl}
-            />
-          ) : (
-            <div className="h-full w-full bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.16),transparent_22%),linear-gradient(90deg,#0f5a5a_0%,#1e8b88_32%,#9be2df_50%,#146969_72%,#0f4a4a_100%)]" />
-          )}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,20,20,0.28)_0%,rgba(9,19,19,0.12)_26%,rgba(7,15,15,0.36)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_18%),radial-gradient(circle_at_bottom,rgba(0,0,0,0.22),transparent_24%)]" />
-        </div>
+        <HomeHeroMedia
+          imageAlt={heroProduct?.name ?? "Beads Bonita hero"}
+          imageUrl={heroProduct?.primaryImageUrl ?? null}
+        />
 
         <HomeTopChrome brandName={brand.name} items={navItems} slides={
           featuredProducts.length > 0
@@ -95,26 +82,20 @@ export default async function Page() {
               ]
         } />
 
-        <div className="relative z-10 flex min-h-screen items-end justify-center px-6 pb-16 pt-40 sm:px-10 sm:pb-20 lg:px-16 lg:pb-24">
-          <div className="w-full max-w-[920px] text-center text-white">
-            <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/70">
-              Handcrafted jewelry, editorial presence
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6 pb-16 pt-40 sm:px-10 sm:pb-20 lg:px-16 lg:pb-24">
+          <div className="flex w-full max-w-[920px] flex-col items-center text-center text-white">
+            <p className="mt-28 max-w-[34rem] font-[family-name:var(--font-display)] text-[1rem] italic leading-relaxed tracking-[0.18em] text-white/88 sm:mt-32 sm:text-[1.18rem] lg:mt-40 lg:text-[1.35rem]">
+              Buy Bonita, Be Bonita
             </p>
-            <h1 className="mt-8 font-[family-name:var(--font-display)] text-5xl leading-none tracking-[-0.05em] sm:text-7xl lg:text-[6rem]">
-              {heroProduct?.name ?? "Collected pieces with quiet presence."}
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-white/82 sm:text-lg">
-              {heroProduct?.shortDescription ??
-                "Small-batch jewelry designed to feel intimate, giftable, and visually memorable from the first screen."}
-            </p>
+            <div className="mt-28 flex flex-col items-center sm:mt-32">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.46em] text-white/72 sm:text-[0.78rem]">
+                Handcrafted | Customisable
+              </p>
+              <div className="mt-5 h-px w-24 bg-white/24" />
+            </div>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link href={heroProduct ? `/product/${heroProduct.slug}` : "/shop"}>
-                <Button className="!min-h-14 !bg-white !px-8 !text-[var(--color-bonita-charcoal)] hover:!bg-[#f2ece5]">
-                  Shop now
-                </Button>
-              </Link>
               <Link
-                className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/22 bg-white/10 px-8 text-sm font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md transition hover:bg-white/16"
+                className="inline-flex min-h-14 items-center justify-center border border-white/20 bg-white/10 px-12 text-sm font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md transition hover:bg-white/16"
                 href="/shop"
               >
                 Explore all pieces

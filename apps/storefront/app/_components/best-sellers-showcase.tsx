@@ -40,7 +40,6 @@ export function BestSellersShowcase({
     activeIndex,
     canLoop,
     handleTransitionEnd,
-    loopPadding,
     loopedIndexes,
     trackIndex,
     transitionEnabled,

@@ -112,12 +112,16 @@ export function CustomerAuthShell({
                   </div>
                 ) : null}
 
-                <div className={statusMessage ? "mt-10" : ""}>{primaryForm}</div>
+              <div className={statusMessage ? "mt-10" : ""}>{primaryForm}</div>
 
-                <div className="mt-14 border-t border-black/10 pt-10">
-                  {secondaryAction}
+              <div className="mt-14 border-t border-black/10 pt-10">
+                <div className="sr-only">
+                  <h2>{formTitle}</h2>
+                  <p>{formDescription}</p>
                 </div>
+                {secondaryAction}
               </div>
+            </div>
             </div>
           </div>
         </section>

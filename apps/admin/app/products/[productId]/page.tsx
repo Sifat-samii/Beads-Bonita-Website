@@ -29,6 +29,8 @@ export default async function ProductDetailPage({
   await requireAdmin();
   const { productId } = await params;
   const resolvedSearchParams = await searchParams;
+  // Generated DB types in this repo do not include all admin-side joins yet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = getSupabaseAdminClient() as any;
 
   const [

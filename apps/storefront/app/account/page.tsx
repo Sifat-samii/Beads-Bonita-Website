@@ -91,7 +91,7 @@ const wishlist = [
 ];
 
 export default async function AccountPage() {
-  const { profile, user } = await requireCustomer();
+  const { profile } = await requireCustomer();
 
   const displayName = profile.full_name ?? "Sarah Chen";
   const shortName = displayName.split(" ")[0] ?? displayName;
@@ -298,7 +298,7 @@ export default async function AccountPage() {
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {wishlist.map((item) => (
                       <div
-                        className="rounded-[18px] border border-white/65 bg-white/8? p-4 shadow-[0_8px_25px_rgba(59,43,30,0.04)]"
+                        className="rounded-[18px] border border-white/65 bg-white/80 p-4 shadow-[0_8px_25px_rgba(59,43,30,0.04)]"
                         key={item.name}
                       >
                         <div className={`h-36 rounded-[14px] bg-gradient-to-br ${item.art}`} />

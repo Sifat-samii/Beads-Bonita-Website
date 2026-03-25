@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DeleteProductButton } from "./delete-product-button";
@@ -395,10 +396,13 @@ export function ProductForm({
                 >
                   x
                 </button>
-                <img
+                <Image
                   alt={preview.file.name}
                   className="h-48 w-full object-cover"
+                  height={192}
+                  unoptimized
                   src={preview.url}
+                  width={384}
                 />
                 <div className="p-4">
                   <p className="truncate text-xs text-white/75">{preview.file.name}</p>
@@ -414,10 +418,13 @@ export function ProductForm({
                 className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/10"
                 key={image.id}
               >
-                <img
+                <Image
                   alt={image.altText ?? (draft.name || "Product image")}
                   className="h-48 w-full object-cover"
+                  height={192}
+                  unoptimized
                   src={image.url}
+                  width={384}
                 />
                 <div className="space-y-3 p-4">
                   <p className="text-xs text-white/65">

@@ -6,12 +6,13 @@ import { getHomeChromeData } from "../_lib/home-chrome";
 export async function StorefrontFrame({
   children,
   contentClassName,
-  currentPath: _currentPath,
+  currentPath,
 }: {
   children: React.ReactNode;
   contentClassName?: string;
   currentPath: string;
 }) {
+  void currentPath;
   const { navItems, announcementSlides } = await getHomeChromeData();
 
   return (

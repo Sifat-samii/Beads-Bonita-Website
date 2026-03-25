@@ -28,13 +28,17 @@ export function FeaturedProductsSpotlight({
     autoplayMs: 2500,
   });
 
+  useEffect(() => {
+    if (!products.length) {
+      return;
+    }
+
+    setAutoplayPaused(false);
+  }, [products.length, setAutoplayPaused]);
+
   if (!products.length) {
     return null;
   }
-
-  useEffect(() => {
-    setAutoplayPaused(false);
-  }, [setAutoplayPaused]);
 
   return (
     <section className="bg-[#f7f5f2] px-6 py-16 sm:px-10 lg:px-16 lg:py-22">

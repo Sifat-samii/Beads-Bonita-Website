@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { checkoutFinalizeRequestSchema } from "@beads-bonita/core";
 import { getCurrentSessionUser } from "@beads-bonita/supabase/auth";
 import { getSupabaseAdminClient } from "@beads-bonita/supabase/server";
-import { buildCheckoutIntentResponse, calculateCheckoutSubtotal } from "../../../_lib/checkout";
+import { buildCheckoutIntentResponse } from "../../../_lib/checkout";
 import {
   buildMerchantTransactionId,
   createSslcommerzSession,

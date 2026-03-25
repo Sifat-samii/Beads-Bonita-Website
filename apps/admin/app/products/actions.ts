@@ -95,6 +95,8 @@ function sanitizeFileNameSegment(value: string) {
 }
 
 async function ensureProductImagesBucket() {
+  // Generated DB types in this repo do not include storage bucket admin operations yet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = getSupabaseAdminClient() as any;
   const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
 
@@ -134,6 +136,7 @@ async function uploadProductImages(input: {
 }) {
   // Generated DB types in this repo do not currently include product_images.
   // Cast locally so the storage pipeline can be implemented without blocking on typegen.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = getSupabaseAdminClient() as any;
   const imageFiles = input.files.filter((file): file is File => {
     if (!file || typeof file === "string") {
@@ -1161,6 +1164,8 @@ export async function updateProductAction(productId: string, formData: FormData)
 }
 
 export async function deleteProductAction(productId: string) {
+  // Generated DB types in this repo do not currently include product_images.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = getSupabaseAdminClient() as any;
 
   const [{ data: product, error: productError }, { data: productImages, error: productImagesError }] =
@@ -1234,8 +1239,11 @@ export async function deleteProductAction(productId: string) {
 export async function deleteProductImageAction(
   productId: string,
   imageId: string,
-  _formData: FormData,
+  formData: FormData,
 ) {
+  void formData;
+  // Generated DB types in this repo do not currently include product_images.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = getSupabaseAdminClient() as any;
 
   const { data: image, error: imageError } = await supabase

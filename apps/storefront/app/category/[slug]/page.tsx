@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Surface } from "@beads-bonita/ui/surface";
 import { ProductCard } from "../../_components/product-card";

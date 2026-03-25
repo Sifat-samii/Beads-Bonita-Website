@@ -152,7 +152,7 @@ export function BestSellersShowcase({
                         )}
                       </div>
                       <div className="flex min-h-[6rem] w-full items-start justify-center px-3 pt-4 text-center">
-                        <h3 className="font-[family-name:var(--font-display)] text-[1.55rem] leading-[1.08] tracking-[-0.03em] text-[var(--color-bonita-charcoal)] xl:text-[1.8rem]">
+                        <h3 className="font-[family-name:var(--font-display)] text-[1.42rem] leading-[1.08] tracking-[-0.03em] text-[var(--color-bonita-charcoal)] xl:text-[1.68rem]">
                           {product.name}
                         </h3>
                       </div>
